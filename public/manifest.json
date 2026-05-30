@@ -1,0 +1,23 @@
+{
+  "name": "PokerPals",
+  "short_name": "PokerPals",
+  "description": "Theo dõi điểm poker cho nhóm bạn — nhanh, gọn, đẹp.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07050f",
+  "theme_color": "#07050f",
+  "orientation": "portrait",
+  "lang": "vi",
+  "categories": ["games", "utilities"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Trang chủ",
+      "short_name": "Nhóm",
+      "url": "/",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ]
+}
