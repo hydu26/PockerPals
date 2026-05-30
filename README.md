@@ -1,36 +1,149 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🃏 PokerPals
 
-## Getting Started
+Ứng dụng theo dõi điểm poker cho nhóm bạn — nhanh, gọn, đẹp.
 
-First, run the development server:
+> PWA · Next.js 16 · Supabase · Claude AI
+
+---
+
+## Tính năng
+
+| Tính năng | Mô tả |
+|---|---|
+| **Nhóm & quyền truy cập** | Tạo nhiều nhóm, đặt mật khẩu riêng cho từng nhóm |
+| **Nhập điểm phiên** | Nhập điểm từng người, kiểm tra tổng cân bằng trước khi lưu |
+| **Lịch sử phiên** | Xem lại toàn bộ các phiên đã chơi |
+| **Bảng xếp hạng** | Xếp hạng thành viên theo tổng điểm tích lũy |
+| **AI Phân xử** | Claude AI giải quyết tranh chấp Texas Hold'em theo thời gian thực |
+| **Luật chơi** | Tham khảo nhanh thứ bậc bài, hành động đặt cược, diễn biến ván |
+| **PWA** | Cài đặt như app native trên iOS/Android |
+| **Phân quyền** | Super admin · Admin nhóm · Thành viên chỉ xem |
+
+---
+
+## Stack
+
+- **Framework** — [Next.js 16](https://nextjs.org) (App Router)
+- **UI** — React 19 · Tailwind CSS v4
+- **Backend / Auth / DB** — [Supabase](https://supabase.com)
+- **Data fetching** — [TanStack Query v5](https://tanstack.com/query)
+- **AI** — [Anthropic Claude](https://anthropic.com) qua `@anthropic-ai/sdk`
+- **State** — [Zustand](https://zustand-demo.pmnd.rs)
+- **Notifications** — [Sonner](https://sonner.emilkowal.ski)
+
+---
+
+## Bắt đầu
+
+### 1. Clone & cài dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url>
+cd pocker_bulletin
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Tạo file `.env.local`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://<project-id>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Anthropic (cho tính năng AI Phân xử)
+ANTHROPIC_API_KEY=sk-ant-...
 
-## Learn More
+# URL của app (dùng cho SEO / Open Graph)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Chạy dev server
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Mở [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Cấu trúc thư mục
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+├── (app)/                  # Layout chính (TopBar + BottomNav)
+│   ├── page.tsx            # Trang chủ — danh sách nhóm
+│   ├── groups/
+│   │   ├── new/            # Tạo nhóm mới
+│   │   └── [id]/
+│   │       ├── page.tsx    # Nhập điểm phiên
+│   │       ├── history/    # Lịch sử phiên
+│   │       ├── rank/       # Bảng xếp hạng
+│   │       ├── members/    # Quản lý thành viên
+│   │       └── settings/   # Cài đặt nhóm
+│   ├── ai/                 # AI Phân xử + FAQ
+│   └── rules/              # Luật chơi
+├── (auth)/login/           # Đăng nhập
+├── icon.tsx                # Favicon (joker card, render động)
+├── apple-icon.tsx          # Apple touch icon
+├── opengraph-image.tsx     # Ảnh preview OG (1200×630)
+└── layout.tsx              # Root layout + SEO metadata
+
+components/
+├── shared/                 # TopBar, BottomNav, Providers, modals
+├── groups/                 # GroupCard, group wizards
+└── score/                  # ScoreRow
+
+lib/
+├── hooks/                  # useGroups, usePermissions, useGroupAccess …
+├── supabase/               # Client + server Supabase helpers
+├── types/                  # TypeScript types
+└── utils/                  # format-score, …
+
+supabase/
+├── migrations/             # SQL migrations
+└── functions/              # Edge Functions
+
+public/
+├── icon.svg                # Icon tĩnh (PWA manifest)
+├── manifest.json           # Web app manifest
+└── sw.js                   # Service Worker
+```
+
+---
+
+## Phân quyền
+
+| Role | Quyền |
+|---|---|
+| **Super admin** | Tạo nhóm mới, xem tất cả nhóm |
+| **Group admin** | Lưu điểm, chỉnh sửa cài đặt nhóm, quản lý thành viên |
+| **Member** | Xem điểm, lịch sử, xếp hạng (chỉ đọc) |
+
+Super admin được cấu hình qua biến môi trường hoặc Supabase. Nhóm có mật khẩu yêu cầu người dùng nhập đúng mật khẩu trước khi truy cập.
+
+---
+
+## Deploy lên Vercel
+
+```bash
+# Push lên GitHub rồi import vào Vercel
+# Thêm các biến môi trường trong Settings > Environment Variables:
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+ANTHROPIC_API_KEY
+NEXT_PUBLIC_APP_URL   # ví dụ: https://pokerpals.vercel.app
+```
+
+Vercel tự động build và deploy khi push lên `main`.
+
+---
+
+## Scripts
+
+```bash
+pnpm dev      # dev server (http://localhost:3000)
+pnpm build    # production build
+pnpm start    # chạy production build local
+pnpm lint     # ESLint
+```
