@@ -1,18 +1,15 @@
 import type { WizardDraft } from "@/lib/types/wizard"
 import { inputStyle } from "./step-basic"
-
-const SUPER_ADMIN = "corneille261998@gmail.com"
+import { usePermissions } from "@/lib/hooks/use-permissions"
 
 export default function StepSecurity({
   draft,
   onChange,
-  userEmail,
 }: Readonly<{
   draft: WizardDraft
   onChange: (d: Partial<WizardDraft>) => void
-  userEmail: string | null
 }>) {
-  const isSuperAdmin = userEmail === SUPER_ADMIN
+  const { isSuperAdmin } = usePermissions()
 
   const updateEmail = (idx: number, val: string) => {
     const next = [...draft.admin_emails]

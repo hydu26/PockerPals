@@ -5,8 +5,8 @@ import type { CSSProperties } from "react"
 
 const NAV_ITEMS = [
   { icon: "🏠", label: "Nhóm",       href: "/" },
+  { icon: "🤖", label: "Cộng Sự", href: "/ai" },
   { icon: "📖", label: "Luật chơi",  href: "/rules" },
-  { icon: "🤖", label: "AI Phân xử", href: "/ai" },
 ] as const
 
 export default function BottomNav() {

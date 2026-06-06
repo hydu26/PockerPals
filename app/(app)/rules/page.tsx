@@ -2,6 +2,49 @@
 
 import { useState } from "react";
 
+const FAQS = [
+  {
+    id: "tiebreak",
+    q: "Khi 2 người cùng bộ bài, ai thắng?",
+    a: "So sánh lá cao nhất trong bộ bài. Nếu vẫn bằng, so lá kicker (các lá còn lại theo thứ tự từ cao xuống thấp). Nếu hoàn toàn bằng nhau → chia đôi pot.",
+  },
+  {
+    id: "allin",
+    q: "Luật all-in hoạt động thế nào?",
+    a: "Người all-in chỉ có thể thắng phần pot mà họ đã đóng góp (main pot). Phần tiền bet thêm của những người khác tạo thành side pot riêng — người all-in không tham gia vào side pot đó.",
+  },
+  {
+    id: "blinds",
+    q: "Small blind và Big blind là gì?",
+    a: "Small blind (SB) là người ngồi bên trái dealer, đặt cược bắt buộc bằng một nửa big blind. Big blind (BB) ngồi bên trái SB, đặt cược bắt buộc bằng mức tối thiểu của ván.",
+  },
+  {
+    id: "community",
+    q: "Bài chung (community cards) dùng thế nào?",
+    a: "Mỗi người chơi kết hợp 2 lá bài trên tay với tối đa 5 lá bài chung để tạo ra bộ 5 lá tốt nhất. Bạn có thể dùng 0, 1, hoặc 2 lá trên tay.",
+  },
+  {
+    id: "check",
+    q: "Khi nào có thể check?",
+    a: "Có thể check khi chưa có ai bet trong vòng đó (hoặc bạn là BB và không ai raise pre-flop). Nếu đã có người bet trước, bạn phải call, raise, hoặc fold.",
+  },
+  {
+    id: "dealer",
+    q: "Dealer button di chuyển thế nào?",
+    a: "Dealer button di chuyển sang trái (chiều kim đồng hồ) sau mỗi ván. SB và BB cũng dịch chuyển theo chiều đó.",
+  },
+  {
+    id: "showdown",
+    q: "Showdown diễn ra khi nào?",
+    a: "Showdown xảy ra khi còn ít nhất 2 người sau river và hoàn tất vòng bet cuối. Người last aggressor (bet/raise cuối cùng) phải show bài trước. Người khác có thể muck (úp bài) nếu thua.",
+  },
+  {
+    id: "kicker",
+    q: "Kicker là gì?",
+    a: "Kicker là lá bài không thuộc bộ chính (đôi, sám...) dùng để phân định thắng thua khi 2 người cùng bộ. Ví dụ: cả 2 có đôi A, người có kicker K thắng người có kicker Q.",
+  },
+]
+
 /* Mini playing card */
 function Card({
   rank,
@@ -562,7 +605,10 @@ const ACCORDS: AccSection[] = [
 ];
 
 export default function RulesPage() {
+  const [tab, setTab] = useState<"rules" | "faqs">("rules");
   const [openIds, setOpenIds] = useState<Set<string>>(new Set(["hands"]));
+  const [openFaqs, setOpenFaqs] = useState<Set<string>>(new Set());
+
   const toggle = (id: string) =>
     setOpenIds((cur) => {
       const next = new Set(cur);
@@ -570,85 +616,174 @@ export default function RulesPage() {
       return next;
     });
 
+  const toggleFaq = (id: string) =>
+    setOpenFaqs((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+
   return (
     <div>
-       {/* Header */}
+      {/* Header */}
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fb)", color: "var(--tx)", marginBottom: 4 }}>
-          Luật chơi
+          Cẩm nang Poker
         </h1>
-          <p style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
-          Tóm tắt nhanh các quy tắc cơ bản của poker.
+        <p style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
+          Thứ bậc bài · Luật cơ bản · Câu hỏi thường gặp
         </p>
       </div>
-      {/* Accordions */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {ACCORDS.map((sec) => {
-          const open = openIds.has(sec.id);
+
+      {/* Tab bar */}
+      <div style={{
+        display: "flex", background: "var(--gl2)", borderRadius: 14,
+        padding: 4, marginBottom: 20, gap: 4,
+        border: "1px solid var(--gl-bd)",
+      }}>
+        {(["rules", "faqs"] as const).map((t) => {
+          const active = tab === t;
+          const label = t === "rules" ? "📖 Luật chơi" : "❓ FAQs";
           return (
-            <div
-              key={sec.id}
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
               style={{
-                background: "var(--gl)",
-                backdropFilter: "blur(20px) saturate(180%)",
-                WebkitBackdropFilter: "blur(20px) saturate(180%)",
-                border: open ? "1px solid var(--ac)" : "1px solid var(--gl-bd)",
-                borderRadius: 16,
-                overflow: "hidden",
-                boxShadow:
-                  "inset 0 1px 0 0 var(--gl-hl), 0 3px 12px var(--gl-sh)",
-                transition: "border-color var(--dur-f)",
+                flex: 1, padding: "9px 4px", borderRadius: 11, border: "none",
+                background: active ? "linear-gradient(135deg,var(--ac),var(--ac3))" : "transparent",
+                color: active ? "white" : "var(--tx3)",
+                fontFamily: "var(--fb)", fontSize: 12, fontWeight: 700,
+                cursor: "pointer", transition: "all var(--dur-f)",
+                boxShadow: active ? "0 2px 10px var(--gw)" : "none",
               }}
             >
-              <button
-                onClick={() => toggle(sec.id)}
-                style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    fontWeight: 700,
-                    fontSize: 14,
-                    fontFamily: "var(--fb)",
-                    color: "var(--tx)",
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{sec.icon}</span>
-                  {sec.title}
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: open ? "var(--ac)" : "var(--tx3)",
-                    fontWeight: 600,
-                    transition: "transform var(--dur-f)",
-                    transform: open ? "rotate(180deg)" : "rotate(0deg)",
-                    display: "inline-block",
-                  }}
-                >
-                  ▾
-                </span>
-              </button>
-
-              {open && (
-                <div style={{ padding: "0 16px 16px" }}>{sec.content}</div>
-              )}
-            </div>
+              {label}
+            </button>
           );
         })}
       </div>
+
+      {/* ── FAQs Tab ── */}
+      {tab === "faqs" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {FAQS.map((faq) => {
+            const open = openFaqs.has(faq.id);
+            return (
+              <div key={faq.id} style={{
+                background: "var(--gl)",
+                backdropFilter: "blur(20px) saturate(180%)",
+                WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                border: `1px solid ${open ? "var(--ac)" : "var(--gl-bd)"}`,
+                borderRadius: 16, overflow: "hidden",
+                boxShadow: "inset 0 1px 0 0 var(--gl-hl), 0 3px 12px var(--gl-sh)",
+                transition: "border-color var(--dur-f)",
+              }}>
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(faq.id)}
+                  style={{
+                    width: "100%", padding: "14px 16px",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: "transparent", border: "none",
+                    cursor: "pointer", gap: 12, textAlign: "left",
+                  }}
+                >
+                  <span style={{ fontFamily: "var(--fb)", fontSize: 14, fontWeight: 700, color: "var(--tx)", flex: 1 }}>
+                    {faq.q}
+                  </span>
+                  <span style={{
+                    fontSize: 13, color: open ? "var(--ac)" : "var(--tx3)", fontWeight: 600,
+                    transition: "transform var(--dur-f)", transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                    display: "inline-block",
+                  }}>▾</span>
+                </button>
+                {open && (
+                  <div style={{
+                    borderTop: "1px solid var(--gl-bd)",
+                    padding: "12px 16px 14px",
+                    fontFamily: "var(--fm)", fontSize: 13, color: "var(--tx2)",
+                    lineHeight: 1.75,
+                  }}>
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Luật chơi Tab ── */}
+      {tab === "rules" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {ACCORDS.map((sec) => {
+            const open = openIds.has(sec.id);
+            return (
+              <div
+                key={sec.id}
+                style={{
+                  background: "var(--gl)",
+                  backdropFilter: "blur(20px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                  border: open ? "1px solid var(--ac)" : "1px solid var(--gl-bd)",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  boxShadow:
+                    "inset 0 1px 0 0 var(--gl-hl), 0 3px 12px var(--gl-sh)",
+                  transition: "border-color var(--dur-f)",
+                }}
+              >
+                <button
+                  onClick={() => toggle(sec.id)}
+                  style={{
+                    width: "100%",
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      fontWeight: 700,
+                      fontSize: 14,
+                      fontFamily: "var(--fb)",
+                      color: "var(--tx)",
+                    }}
+                  >
+                    <span style={{ fontSize: 18 }}>{sec.icon}</span>
+                    {sec.title}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: open ? "var(--ac)" : "var(--tx3)",
+                      fontWeight: 600,
+                      transition: "transform var(--dur-f)",
+                      transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                      display: "inline-block",
+                    }}
+                  >
+                    ▾
+                  </span>
+                </button>
+
+                {open && (
+                  <div style={{ padding: "0 16px 16px" }}>{sec.content}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
-  );
+    );
 }

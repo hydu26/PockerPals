@@ -9,7 +9,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import ScoreRow from "@/components/score/score-row"
 import type { Chip, GroupWithMeta, ScoreMap } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 import { formatCurrency, scoreColor } from "@/lib/utils/format-score"
 
 export default function ScorePage() {
@@ -26,7 +25,6 @@ export default function ScorePage() {
 
   const chips = (group.chips as unknown as Chip[]) ?? []
   const isAdmin = isGroupAdmin(group.admin_emails)
-  const currencyUnit: CurrencyUnit = group.currency_unit === "EUR" ? "EUR" : "centime"
   const total = Object.values(scores).reduce((a, b) => a + b, 0)
 
   const openConfirm = () => {
@@ -92,7 +90,7 @@ export default function ScorePage() {
         <span>
           Tổng nhập:{" "}
           <b style={{ fontFamily: "var(--fm)", color: total === 0 ? "var(--win)" : "var(--lose)" }}>
-            {total === 0 ? "✓ Cân bằng" : formatCurrency(total, currencyUnit)}
+            {total === 0 ? "✓ Cân bằng" : formatCurrency(total)}
           </b>
         </span>
       </div>
@@ -104,7 +102,6 @@ export default function ScorePage() {
           member={m}
           chips={chips}
           loanAmount={group.loan_amount}
-          currencyUnit={currencyUnit}
           value={scores[m.id] ?? 0}
           onChange={(v) => setScores((prev) => ({ ...prev, [m.id]: v }))}
         />
@@ -145,7 +142,6 @@ export default function ScorePage() {
           phase={phase}
           scores={scores}
           members={group.members}
-          currencyUnit={currencyUnit}
           saving={saving}
           onConfirm={handleSave}
           onClose={() => setShowModal(false)}
@@ -158,12 +154,11 @@ export default function ScorePage() {
 const CONFETTI = ["🎲", "🃏", "♠️", "♥️", "🎉", "✨", "🎊", "💫"]
 
 function SaveModal({
-  phase, scores, members, currencyUnit, saving, onConfirm, onClose,
+  phase, scores, members, saving, onConfirm, onClose,
 }: Readonly<{
   phase: "confirm" | "success"
   scores: ScoreMap
   members: { id: string; name: string; color: string }[]
-  currencyUnit: CurrencyUnit
   saving: boolean
   onConfirm: () => void
   onClose: () => void
@@ -234,7 +229,7 @@ function SaveModal({
         <span>
           Tổng nhập:{" "}
           <b style={{ fontFamily: "var(--fm)", color: total === 0 ? "var(--win)" : "var(--lose)" }}>
-            {total === 0 ? "✓ Cân bằng" : formatCurrency(total, currencyUnit)}
+            {total === 0 ? "✓ Cân bằng" : formatCurrency(total)}
           </b>
         </span>
       </div>
@@ -260,7 +255,7 @@ function SaveModal({
                       {m.name}
                     </span>
                     <span style={{ fontFamily: "var(--fm)", fontSize: 15, fontWeight: 700, color: scoreColor(score) }}>
-                      {formatCurrency(score, currencyUnit)}
+                      {formatCurrency(score)}
                     </span>
                   </div>
                 )

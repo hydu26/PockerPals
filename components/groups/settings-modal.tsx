@@ -6,13 +6,10 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { useQueryClient } from "@tanstack/react-query"
 import type { GroupWithMeta, Chip } from "@/lib/types/app"
+import { usePermissions } from "@/lib/hooks/use-permissions"
+import { MEMBER_COLORS } from "@/lib/types/wizard"
 
-const CHIP_COLORS = [
-  "#ef4444","#f97316","#facc15","#22c55e",
-  "#3b82f6","#a855f7","#ec4899","#06b6d4","#171717","#f8fafc",
-]
-const SUPER_ADMIN = "corneille261998@gmail.com"
-
+const CHIP_COLORS = MEMBER_COLORS
 function genId() { return Math.random().toString(36).slice(2, 9) }
 
 const lbl: React.CSSProperties = {
@@ -38,29 +35,24 @@ const card: React.CSSProperties = {
 
 export default function SettingsModal({
   group,
-  userEmail,
   onClose,
 }: Readonly<{
   group: GroupWithMeta
-  userEmail: string | null
   onClose: () => void
 }>) {
   const qc = useQueryClient()
-  const isSuperAdmin = userEmail === SUPER_ADMIN
+  const { isSuperAdmin } = usePermissions()
 
-  const [loanAmount, setLoanAmount] = useState(group.loan_amount ?? 100)
-  const [currencyUnit, setCurrencyUnit] = useState<"centime" | "EUR">(
-    (group.currency_unit as "centime" | "EUR") ?? "centime"
-  )
+  const [loanAmount, setLoanAmount] = useState(group.loan_amount ?? 1)
   const [chips, setChips] = useState<Chip[]>(() =>
     Array.isArray(group.chips) ? (group.chips as Chip[]) : []
   )
   const [password, setPassword] = useState("")
-  const [adminEmails, setAdminEmails] = useState<string[]>(
-    group.admin_emails.filter((e) => e !== SUPER_ADMIN)
-  )
+  const [adminEmails, setAdminEmails] = useState<string[]>(group.admin_emails)
   const [newAdminEmail, setNewAdminEmail] = useState("")
+  const originalEmails = group.admin_emails
   const [saving, setSaving] = useState(false)
+  const [resendingEmail, setResendingEmail] = useState<string | null>(null)
   const [colorPickChip, setColorPickChip] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -84,10 +76,35 @@ export default function SettingsModal({
   const removeAdmin = (emailToRemove: string) =>
     setAdminEmails((prev) => prev.filter((e) => e !== emailToRemove))
 
+  const handleResendInvite = async (email: string) => {
+    setResendingEmail(email)
+    try {
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails: [email] }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        toast.error(`Lỗi ${res.status}: ${(body as { error?: string }).error ?? "không xác định"}`)
+        return
+      }
+      const { results } = (await res.json()) as { results: { email: string; status: string; message?: string }[] }
+      const r = results[0]
+      if (!r) { toast.error("Không có kết quả trả về"); return }
+      if (r.status === "invited") toast.success(`Đã gửi lại lời mời đến ${email}`)
+      else if (r.status === "exists") toast.info("Tài khoản đã tồn tại — người dùng đăng nhập bình thường")
+      else toast.error(`Lỗi Supabase: ${r.message ?? "không xác định"}`)
+    } catch {
+      toast.error("Lỗi kết nối")
+    } finally {
+      setResendingEmail(null)
+    }
+  }
+
   const addAdmin = () => {
     const email = newAdminEmail.trim().toLowerCase()
     if (!email.includes("@")) { toast.error("Email không hợp lệ"); return }
-    if (email === SUPER_ADMIN) { toast.error("Đây là Admin tổng, không cần thêm"); return }
     if (adminEmails.includes(email)) { toast.error("Email đã có"); return }
     setAdminEmails((prev) => [...prev, email])
     setNewAdminEmail("")
@@ -110,7 +127,6 @@ export default function SettingsModal({
         .from("groups")
         .update({
           loan_amount: loanAmount,
-          currency_unit: currencyUnit,
           chips: chips as unknown as import("@/lib/types/database").Json,
           ...(passwordHash === undefined ? {} : { password_hash: passwordHash }),
         })
@@ -125,6 +141,21 @@ export default function SettingsModal({
             .from("group_admins")
             .insert(allEmails.map((email) => ({ group_id: group.id, email })))
           if (admErr) throw admErr
+        }
+
+        // Invite các email mới (chưa có trong danh sách gốc)
+        const newEmails = allEmails.filter((e) => !originalEmails.includes(e))
+        if (newEmails.length > 0) {
+          const res = await fetch("/api/admin/invite", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ emails: newEmails }),
+          })
+          const { results } = (await res.json()) as { results: { status: string }[] }
+          const invitedCount = results.filter((r) => r.status === "invited").length
+          if (invitedCount > 0) {
+            toast.success(`Đã gửi email mời đến ${invitedCount} admin mới`)
+          }
         }
       }
 
@@ -220,41 +251,6 @@ export default function SettingsModal({
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "0 22px" }}>
 
-          {/* Currency unit */}
-          <div style={card}>
-            <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 7 }}>
-              💶 Đơn vị tiền tệ
-            </p>
-            <p style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 12, lineHeight: 1.5 }}>
-              Cách quy đổi điểm xèng sang giá trị tiền thực (EUR).
-            </p>
-            <div style={{ display: "flex", gap: 10 }}>
-              {(["centime", "EUR"] as const).map((u) => {
-                const active = currencyUnit === u
-                return (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => setCurrencyUnit(u)}
-                    style={{
-                      flex: 1, padding: "11px 10px", borderRadius: 11, cursor: "pointer",
-                      border: active ? "2px solid var(--ac)" : "1.5px solid var(--gl-bd)",
-                      background: active
-                        ? "linear-gradient(135deg,rgba(184,159,255,.18),rgba(245,179,255,.1))"
-                        : "var(--gl2)",
-                      color: active ? "var(--ac)" : "var(--tx2)",
-                      fontFamily: "var(--fm)", fontWeight: 700, fontSize: 13,
-                      transition: "all var(--dur-f)",
-                      boxShadow: active ? "0 0 0 3px var(--gw)" : "none",
-                    }}
-                  >
-                    {u === "centime" ? "¢ Centimes" : "€ EUR"}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
           {/* Loan amount */}
           <div style={card}>
             <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 7 }}>
@@ -263,12 +259,14 @@ export default function SettingsModal({
             <p style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 12, lineHeight: 1.5 }}>
               Mỗi lần vay/mua xèng bằng số tiền này.
             </p>
-            <label htmlFor="loan-amount" style={lbl}>Số tiền ({currencyUnit === "centime" ? "centimes" : "EUR"})</label>
+            <label htmlFor="loan-amount" style={lbl}>Số tiền (€)</label>
             <input
               id="loan-amount"
               type="number"
+              step="0.01"
+              min={0}
               value={loanAmount}
-              onChange={(e) => setLoanAmount(Number.parseInt(e.target.value) || 0)}
+              onChange={(e) => setLoanAmount(Number.parseFloat(e.target.value) || 0)}
               style={inp}
             />
           </div>
@@ -279,7 +277,7 @@ export default function SettingsModal({
               🎲 Các loại xèng
             </p>
             <p style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 12, lineHeight: 1.5 }}>
-              Màu và giá trị mỗi loại xèng ({currencyUnit === "centime" ? "centimes" : "EUR"}).
+              Màu và giá trị mỗi loại xèng (€ EUR).
             </p>
             {chips.map((c) => (
               <div key={c.id} style={{
@@ -307,11 +305,12 @@ export default function SettingsModal({
                 />
                 <input
                   type="number"
+                  step="0.01"
                   value={c.value}
-                  onChange={(e) => updateChip(c.id, { value: Number.parseInt(e.target.value) || 0 })}
+                  onChange={(e) => updateChip(c.id, { value: Number.parseFloat(e.target.value) || 0 })}
                   min={0}
                   style={{
-                    width: 54, textAlign: "center", background: "var(--gl)",
+                    width: 60, textAlign: "left", background: "var(--gl)",
                     border: "1.5px solid var(--gl-bd)", borderRadius: 8,
                     color: "var(--tx)", fontFamily: "var(--fm)",
                     fontSize: 13, fontWeight: 700, padding: "4px 6px", outline: "none",
@@ -347,13 +346,13 @@ export default function SettingsModal({
 
           {/* Color picker popover */}
           {colorPickChip && (
-            <button
-              type="button"
+            <div
+              role="dialog"
               style={{
                 position: "fixed", inset: 0, zIndex: 200,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 background: "rgba(0,0,0,.5)", backdropFilter: "blur(10px)",
-                border: "none", padding: 0, cursor: "default",
+                cursor: "default",
               }}
               onClick={(e) => { if (e.target === e.currentTarget) setColorPickChip(null) }}
               onKeyDown={(e) => { if (e.key === "Escape") setColorPickChip(null) }}
@@ -393,7 +392,7 @@ export default function SettingsModal({
                   })}
                 </div>
               </div>
-            </button>
+            </div>
           )}
 
           {/* Password */}
@@ -439,6 +438,21 @@ export default function SettingsModal({
                   }}>
                     {email}
                   </span>
+                  <button
+                    onClick={() => handleResendInvite(email)}
+                    disabled={resendingEmail === email}
+                    title="Gửi lại lời mời"
+                    style={{
+                      width: 24, height: 24, borderRadius: 7,
+                      border: "1px solid var(--gl-bd)", background: "transparent",
+                      cursor: resendingEmail === email ? "not-allowed" : "pointer",
+                      color: "var(--ac)", fontSize: 11,
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      opacity: resendingEmail === email ? 0.5 : 1,
+                    }}
+                  >
+                    {resendingEmail === email ? "…" : "📨"}
+                  </button>
                   <button
                     onClick={() => removeAdmin(email)}
                     style={{

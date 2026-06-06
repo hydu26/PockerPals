@@ -2,20 +2,21 @@
 
 import { useAuthStore } from "@/lib/stores/auth-store"
 
-const SUPER_ADMIN = "corneille261998@gmail.com"
-
 export function usePermissions() {
-  const { user } = useAuthStore()
-  const email = user?.email ?? null
-  const isSuperAdmin = email === SUPER_ADMIN
+  const { user, role } = useAuthStore()
+  const email = user?.email?.toLowerCase() ?? null
+  const isSuperAdmin = role === "admin"
+  const isLeader     = role === "leader"
 
   return {
     email,
+    role,
     isSuperAdmin,
+    isLeader,
     isGroupAdmin: (adminEmails: string[]) =>
-      !!email && (isSuperAdmin || adminEmails.includes(email)),
+      !!email && (isSuperAdmin || adminEmails.map((e) => e.toLowerCase()).includes(email)),
     canEdit: (adminEmails: string[]) =>
-      !!email && (isSuperAdmin || adminEmails.includes(email)),
+      !!email && (isSuperAdmin || adminEmails.map((e) => e.toLowerCase()).includes(email)),
     canDelete: () => isSuperAdmin,
   }
 }

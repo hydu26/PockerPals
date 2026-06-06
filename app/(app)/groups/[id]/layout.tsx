@@ -5,7 +5,6 @@ import { usePathname, useRouter, useParams } from "next/navigation"
 import { useGroup } from "@/lib/hooks/use-groups"
 import { usePermissions } from "@/lib/hooks/use-permissions"
 import { useGroupAccess } from "@/lib/hooks/use-group-access"
-import { useAuthStore } from "@/lib/stores/auth-store"
 import PasswordModal from "@/components/shared/password-modal"
 import SettingsModal from "@/components/groups/settings-modal"
 
@@ -32,7 +31,6 @@ export default function GroupLayout({ children }: Readonly<{ children: React.Rea
   const router = useRouter()
   const { data: group, isLoading } = useGroup(id)
   const { isGroupAdmin } = usePermissions()
-  const { user } = useAuthStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const isAdmin = group ? isGroupAdmin(group.admin_emails) : false
@@ -166,7 +164,6 @@ export default function GroupLayout({ children }: Readonly<{ children: React.Rea
       {settingsOpen && (
         <SettingsModal
           group={group}
-          userEmail={user?.email ?? null}
           onClose={() => setSettingsOpen(false)}
         />
       )}

@@ -1,12 +1,10 @@
 import type { Chip } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 
 interface ChipInputProps {
   chips: Chip[]
   quantities: Record<string, number>
   loans: number
   loanAmount: number
-  currencyUnit: CurrencyUnit
   onChange: (chipId: string, qty: number) => void
   onLoansChange: (loans: number) => void
 }
@@ -16,12 +14,9 @@ export default function ChipInput({
   quantities,
   loans,
   loanAmount,
-  currencyUnit,
   onChange,
   onLoansChange,
 }: Readonly<ChipInputProps>) {
-  const unitLabel = currencyUnit === "centime" ? "c" : "€"
-
   return (
     <div>
       {/* Chip grid */}
@@ -50,7 +45,7 @@ export default function ChipInput({
                 {chip.name}
               </p>
               <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
-                {chip.value}{unitLabel}
+                {chip.value}€
               </p>
             </div>
             <input
@@ -79,7 +74,7 @@ export default function ChipInput({
             flex: 1, fontSize: 13, fontWeight: 600,
             color: "var(--tx2)", display: "flex", alignItems: "center", gap: 6,
           }}>
-            💸 Vay ({loanAmount}{unitLabel}/lần)
+            💸 Vay ({loanAmount}€/lần)
           </span>
           <input
             type="number"

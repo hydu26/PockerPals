@@ -1,20 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import { useParams } from "next/navigation"
 import { useGroup } from "@/lib/hooks/use-groups"
 import { formatCurrency, scoreColor } from "@/lib/utils/format-score"
 import type { ScoreMap } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 
 export default function RankPage() {
   const { id } = useParams<{ id: string }>()
   const { data: group } = useGroup(id)
-  const [showEUR, setShowEUR] = useState(false)
 
   if (!group) return null
 
-  const currencyUnit: CurrencyUnit = group.currency_unit === "EUR" ? "EUR" : "centime"
   const sessions = (group.sessions as unknown as { scores: ScoreMap }[]) ?? []
 
   const totals: Record<string, number> = {}
@@ -42,36 +38,16 @@ export default function RankPage() {
 
   return (
     <div>
-      {/* Currency toggle */}
-      {currencyUnit === "centime" && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => setShowEUR((v) => !v)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "5px 12px", borderRadius: 20,
-              border: "1px solid var(--gl-bd)", background: "var(--gl)",
-              cursor: "pointer", fontFamily: "var(--fm)", fontSize: 12,
-              fontWeight: 700, color: showEUR ? "var(--ac)" : "var(--tx2)",
-              transition: "all var(--dur-f)",
-            }}
-          >
-            {showEUR ? "€ EUR" : "¢ centimes"}
-          </button>
-        </div>
-      )}
-
       {/* Podium */}
       {top3.length >= 2 && (
         <div style={{
           display: "flex", alignItems: "flex-end",
           justifyContent: "center", gap: 11,
-          padding: "14px 0 28px", position: "relative",
+          padding: "28px 0", position: "relative",
         }}>
-          <Podium member={top3[1]} score={totals[top3[1].id] ?? 0} rank={2} currencyUnit={currencyUnit} showEUR={showEUR} />
-          <Podium member={top3[0]} score={totals[top3[0].id] ?? 0} rank={1} currencyUnit={currencyUnit} showEUR={showEUR} />
-          {top3[2] && <Podium member={top3[2]} score={totals[top3[2].id] ?? 0} rank={3} currencyUnit={currencyUnit} showEUR={showEUR} />}
+          <Podium member={top3[1]} score={totals[top3[1].id] ?? 0} rank={2} />
+          <Podium member={top3[0]} score={totals[top3[0].id] ?? 0} rank={1} />
+          {top3[2] && <Podium member={top3[2]} score={totals[top3[2].id] ?? 0} rank={3} />}
         </div>
       )}
 
@@ -102,7 +78,7 @@ export default function RankPage() {
             <p style={{ fontSize: 12, color: "var(--tx3)", marginTop: 2 }}>{sessionCount} phiên</p>
           </div>
           <span style={{ fontFamily: "var(--fm)", fontSize: 16, fontWeight: 700, color: scoreColor(totals[m.id] ?? 0) }}>
-            {formatCurrency(totals[m.id] ?? 0, currencyUnit, showEUR)}
+            {formatCurrency(totals[m.id] ?? 0)}
           </span>
         </div>
       ))}</div>
@@ -111,13 +87,11 @@ export default function RankPage() {
 }
 
 function Podium({
-  member, score, rank, currencyUnit, showEUR,
+  member, score, rank,
 }: Readonly<{
   member: { name: string; color: string }
   score: number
   rank: 1 | 2 | 3
-  currencyUnit: CurrencyUnit
-  showEUR: boolean
 }>) {
   const podiumSize   = byRank(rank, 66, 54, 48)
   const podiumHeight = byRank(rank, 62, 45, 32)
@@ -144,7 +118,7 @@ function Podium({
         {member.name}
       </span>
       <span style={{ fontFamily: "var(--fm)", fontSize: 16, fontWeight: 700, color: scoreColor(score) }}>
-        {formatCurrency(score, currencyUnit, showEUR)}
+        {formatCurrency(score)}
       </span>
       <div style={{
         background: "var(--gl)", backdropFilter: "blur(20px)",

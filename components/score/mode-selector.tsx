@@ -1,9 +1,9 @@
 type Mode = "chip" | "cash" | "simple"
 
 const MODES: { id: Mode; icon: string; label: string }[] = [
-  { id: "chip",   icon: "🎲", label: "Xèng" },
-  { id: "cash",   icon: "💵", label: "Tiền" },
   { id: "simple", icon: "📝", label: "Số" },
+  { id: "cash",   icon: "💵", label: "Tiền" },
+  { id: "chip",   icon: "🎲", label: "Xèng" },
 ]
 
 export default function ModeSelector({

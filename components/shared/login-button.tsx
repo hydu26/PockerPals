@@ -5,16 +5,18 @@ import { createPortal } from "react-dom"
 import type { CSSProperties } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/stores/auth-store"
+import { usePermissions } from "@/lib/hooks/use-permissions"
 import { cn } from "@/lib/utils/cn"
 
 export default function LoginButton() {
-  const { user, isSuperAdmin, loading, signOut } = useAuthStore()
+  const { user, loading, signOut } = useAuthStore()
+  const { isSuperAdmin } = usePermissions()
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
   const handleClick = () => {
     if (user) setOpen(true)
-    else router.push("/login")
+    else router.push("/auth/login")
   }
 
   const handleSignOut = () => {
@@ -102,6 +104,14 @@ export default function LoginButton() {
             </div>
 
             {/* Buttons */}
+            <button
+              type="button"
+              onClick={() => { setOpen(false); router.push("/auth/update-password") }}
+              className="btn-ghost"
+              style={{ width: "100%", padding: 13, borderRadius: "var(--r)", fontSize: 14, marginBottom: 8 }}
+            >
+              🔑 Đổi mật khẩu
+            </button>
             <div style={{ display: "flex", gap: 9 }}>
               <button
                 type="button"

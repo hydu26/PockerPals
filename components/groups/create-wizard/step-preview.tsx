@@ -14,8 +14,7 @@ export default function StepPreview({
 
       {/* Step 2: Chips */}
       <PreviewCard icon="🎲" label="Xèng" onEdit={() => onJump(1)}>
-        <Row label="Đơn vị" value={draft.currency_unit === "centime" ? "¢ Centimes" : "€ EUR"} mono />
-        <Row label="Vay mỗi lần" value={`${draft.loan_amount} ${draft.currency_unit === "centime" ? "c" : "€"}`} mono />
+        <Row label="Vay mỗi lần" value={`${draft.loan_amount}€`} mono />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
           {draft.chips.map((c) => (
             <span key={c.id} style={{
@@ -25,7 +24,7 @@ export default function StepPreview({
               fontSize: 12, fontFamily: "var(--fm)", color: "var(--tx2)",
             }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
-              {c.name} · {c.value}{draft.currency_unit === "centime" ? "c" : "€"}
+              {c.name} · {c.value}€
             </span>
           ))}
         </div>

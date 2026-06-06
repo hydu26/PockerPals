@@ -13,12 +13,12 @@ create table public.groups (
   id            uuid        primary key default gen_random_uuid(),
   name          text        not null,
   type          text        not null default 'standard',   -- 'standard' | 'tournament'
-  loan_amount   integer     not null default 0,            -- đơn vị: nghìn đồng
+  loan_amount   integer     not null default 0,
   chips         jsonb       not null default '[]',         -- [{id, name, color, value}]
   password_hash text,                                      -- bcrypt hash, null = không có mật khẩu
   currency_unit text        not null default 'centime',    -- 'centime' | 'EUR'
   created_at    timestamptz not null default now(),
-  created_by    text                                       -- email string
+  created_by    text
 );
 
 create table public.members (
@@ -41,30 +41,18 @@ create table public.sessions (
   date        date        not null default current_date,
   scores      jsonb       not null default '{}',   -- {member_id: score_number}
   created_at  timestamptz not null default now(),
-  created_by  text                                 -- email string
-);
-
--- Login codes cho custom auth flow
-create table public.login_codes (
-  id         uuid        primary key default gen_random_uuid(),
-  email      text        not null,
-  code       text        not null,
-  expires_at timestamptz not null,
-  used       boolean     not null default false,
-  created_at timestamptz not null default now()
+  created_by  text
 );
 
 -- ============================================================
 -- INDEXES
 -- ============================================================
 
-create index idx_members_group      on public.members(group_id);
-create index idx_admins_group       on public.group_admins(group_id);
-create index idx_admins_email       on public.group_admins(email);
-create index idx_sessions_group     on public.sessions(group_id);
-create index idx_sessions_date      on public.sessions(group_id, date desc);
-create index idx_login_codes_email  on public.login_codes(email);
-create index idx_login_codes_expires on public.login_codes(expires_at);
+create index idx_members_group  on public.members(group_id);
+create index idx_admins_group   on public.group_admins(group_id);
+create index idx_admins_email   on public.group_admins(email);
+create index idx_sessions_group on public.sessions(group_id);
+create index idx_sessions_date  on public.sessions(group_id, date desc);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -74,8 +62,11 @@ alter table public.groups       enable row level security;
 alter table public.members      enable row level security;
 alter table public.group_admins enable row level security;
 alter table public.sessions     enable row level security;
--- login_codes chỉ truy cập qua service_role trong API routes
-alter table public.login_codes  disable row level security;
+
+-- Helper: kiểm tra role từ JWT app_metadata
+-- app_metadata được set bởi service_role, user không thể tự sửa
+-- role = 'admin'  → super admin (toàn quyền)
+-- role = 'leader' → group admin (quản lý nhóm được phân công)
 
 -- ──────────────────────────────────────────────────────────
 -- groups
@@ -88,14 +79,13 @@ create policy "groups: public read"
 create policy "groups: admin insert"
   on public.groups for insert
   with check (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
-    or auth.jwt() ->> 'email' is not null
+    (auth.jwt() -> 'app_metadata' ->> 'role') in ('admin', 'leader')
   );
 
 create policy "groups: admin update"
   on public.groups for update
   using (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
     or exists (
       select 1 from public.group_admins
       where group_id = groups.id
@@ -105,7 +95,7 @@ create policy "groups: admin update"
 
 create policy "groups: super admin delete"
   on public.groups for delete
-  using (auth.jwt() ->> 'email' = 'corneille261998@gmail.com');
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- ──────────────────────────────────────────────────────────
 -- members
@@ -118,7 +108,7 @@ create policy "members: public read"
 create policy "members: admin write"
   on public.members for all
   using (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
     or exists (
       select 1 from public.group_admins
       where group_id = members.group_id
@@ -134,20 +124,20 @@ create policy "members: admin write"
 create policy "group_admins: read"
   on public.group_admins for select
   using (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
     or email = auth.jwt() ->> 'email'
   );
 
 create policy "group_admins: insert"
   on public.group_admins for insert
   with check (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
     or email = auth.jwt() ->> 'email'
   );
 
 create policy "group_admins: super admin delete"
   on public.group_admins for delete
-  using (auth.jwt() ->> 'email' = 'corneille261998@gmail.com');
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- ──────────────────────────────────────────────────────────
 -- sessions
@@ -160,7 +150,7 @@ create policy "sessions: public read"
 create policy "sessions: admin write"
   on public.sessions for all
   using (
-    auth.jwt() ->> 'email' = 'corneille261998@gmail.com'
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
     or exists (
       select 1 from public.group_admins
       where group_id = sessions.group_id
@@ -186,7 +176,6 @@ revoke execute on function public.hash_password from public, anon;
 grant  execute on function public.hash_password to authenticated;
 
 -- Kiểm tra mật khẩu nhóm — chỉ Edge Function (service_role) gọi được
--- Không bao giờ trả hash về client
 create or replace function public.check_group_password(p_group_id uuid, p_password text)
 returns boolean
 language plpgsql
@@ -201,7 +190,7 @@ begin
   where id = p_group_id;
 
   if v_hash is null then
-    return true;  -- không có mật khẩu → truy cập tự do
+    return true;
   end if;
 
   return v_hash = crypt(p_password, v_hash);

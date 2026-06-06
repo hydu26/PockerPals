@@ -175,13 +175,7 @@ export default function NewGroupPage() {
       <div style={{ flex: 1, overflowY: "auto", paddingRight: 1 }}>
         {step === 0 && <StepBasic draft={draft} onChange={patchDraft} />}
         {step === 1 && <StepChips draft={draft} onChange={patchDraft} />}
-        {step === 2 && (
-          <StepSecurity
-            draft={draft}
-            onChange={patchDraft}
-            userEmail={user?.email ?? null}
-          />
-        )}
+        {step === 2 && <StepSecurity draft={draft} onChange={patchDraft} />}
         {step === 3 && <StepMembers draft={draft} onChange={patchDraft} />}
         {step === 4 && <StepPreview draft={draft} onJump={handleJump} />}
       </div>

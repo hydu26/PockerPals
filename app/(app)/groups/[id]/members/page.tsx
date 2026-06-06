@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/client"
 import { formatCurrency, scoreColor } from "@/lib/utils/format-score"
 import { MEMBER_COLORS } from "@/lib/types/wizard"
 import type { ScoreMap } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 
 const COLORS = MEMBER_COLORS.slice(0, 16)
 
@@ -35,7 +34,6 @@ export default function MembersPage() {
   if (!group) return null
 
   const isAdmin = isGroupAdmin(group.admin_emails)
-  const currencyUnit: CurrencyUnit = group.currency_unit === "EUR" ? "EUR" : "centime"
   const sessions = (group.sessions as unknown as { scores: ScoreMap }[]) ?? []
 
   const totals: Record<string, number> = {}
@@ -250,7 +248,7 @@ export default function MembersPage() {
                 fontFamily: "var(--fm)", fontSize: 14, fontWeight: 700,
                 color: scoreColor(totals[m.id] ?? 0),
               }}>
-                {formatCurrency(totals[m.id] ?? 0, currencyUnit)}
+                {formatCurrency(totals[m.id] ?? 0)}
               </span>
             </div>
             {isAdmin && (

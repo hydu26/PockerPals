@@ -11,7 +11,7 @@ export type WizardMember = {
   color: string
 }
 
-export type CurrencyUnit = "centime" | "EUR"
+export type CurrencyUnit = "EUR"
 
 export type WizardDraft = {
   name: string
@@ -30,18 +30,20 @@ export const MEMBER_COLORS = [
   "#84cc16","#14b8a6","#fb7185","#818cf8",
   "#2dd4bf","#facc15","#c084fc","#38bdf8",
   "#4ade80","#fb923c","#a3e635","#e2e8f0",
+  "#ef4444","#1e293b",
 ]
+
 
 export const DEFAULT_DRAFT: WizardDraft = {
   name: "",
   type: "standard",
-  loan_amount: 100,
-  currency_unit: "centime",
+  loan_amount: 1,
+  currency_unit: "EUR",
   chips: [
-    { id: "c1", name: "Trắng",  color: "#e2e8f0", value: 10  },
-    { id: "c2", name: "Đỏ",    color: "#ef4444", value: 50  },
-    { id: "c3", name: "Xanh",  color: "#3b82f6", value: 100 },
-    { id: "c4", name: "Đen",   color: "#1e293b", value: 500 },
+    { id: "c1", name: "Trắng",  color: "#e2e8f0", value: 0.1  },
+    { id: "c2", name: "Đỏ",    color: "#ef4444", value: 0.5  },
+    { id: "c3", name: "Xanh",  color: "#3b82f6", value: 1   },
+    { id: "c4", name: "Đen",   color: "#1e293b", value: 5   },
   ],
   password: "",
   admin_emails: [],

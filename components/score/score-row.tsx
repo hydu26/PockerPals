@@ -5,24 +5,26 @@ import ModeSelector, { type Mode } from "./mode-selector"
 import ChipInput from "./chip-input"
 import { formatCurrency, scoreColor } from "@/lib/utils/format-score"
 import type { Member, Chip } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 
 interface ScoreRowProps {
   member: Member
   chips: Chip[]
   loanAmount: number
-  currencyUnit: CurrencyUnit
   value: number
   onChange: (score: number) => void
 }
 
-export default function ScoreRow({ member, chips, loanAmount, currencyUnit, value, onChange }: Readonly<ScoreRowProps>) {
-  const [mode, setMode] = useState<Mode>("chip")
+const parseDecimal = (v: string) => {
+  const parsed = parseFloat(v.replace(",", "."))
+  return isNaN(parsed) ? 0 : parsed
+}
+
+export default function ScoreRow({ member, chips, loanAmount, value, onChange }: Readonly<ScoreRowProps>) {
+  const [mode, setMode] = useState<Mode>("simple")
   const [chipQty, setChipQty] = useState<Record<string, number>>({})
   const [loans, setLoans] = useState(0)
   const [cashAmount, setCashAmount] = useState("")
-
-  const unitLabel = currencyUnit === "centime" ? "c" : "€"
+  const [simpleRaw, setSimpleRaw] = useState("")
 
   const calcChipTotal = (qty: Record<string, number>, l: number) => {
     const chipSum = chips.reduce((acc, c) => acc + (qty[c.id] ?? 0) * c.value, 0)
@@ -38,12 +40,17 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
   const handleLoansChange = (l: number) => {
     setLoans(l)
     if (mode === "chip") onChange(calcChipTotal(chipQty, l))
-    else if (mode === "cash") onChange(Number(cashAmount) - l * loanAmount)
+    else if (mode === "cash") onChange(parseDecimal(cashAmount) - l * loanAmount)
   }
 
   const handleCashChange = (v: string) => {
     setCashAmount(v)
-    onChange(Number(v) - loans * loanAmount)
+    onChange(parseDecimal(v) - loans * loanAmount)
+  }
+
+  const handleSimpleChange = (v: string) => {
+    setSimpleRaw(v)
+    onChange(parseDecimal(v))
   }
 
   const initials = member.name.charAt(0).toUpperCase()
@@ -77,7 +84,7 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
             fontFamily: "var(--fm)", fontSize: 17, fontWeight: 700,
             color: scoreColor(value),
           }}>
-            {formatCurrency(value, currencyUnit)}
+            {formatCurrency(value)}
           </span>
         </div>
       </div>
@@ -93,7 +100,6 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
             quantities={chipQty}
             loans={loans}
             loanAmount={loanAmount}
-            currencyUnit={currencyUnit}
             onChange={handleChipChange}
             onLoansChange={handleLoansChange}
           />
@@ -104,13 +110,14 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div>
                 <label className="label-caps" style={{ display: "block", marginBottom: 5 }}>
-                  Tiền mặt ({unitLabel})
+                  Tiền mặt (€)
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={cashAmount}
                   onChange={(e) => handleCashChange(e.target.value)}
-                  placeholder="0"
+                  placeholder="0,00"
                   style={{
                     width: "100%", background: "var(--gl2)",
                     border: "1.5px solid var(--gl-bd)", borderRadius: 10,
@@ -146,7 +153,7 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
               padding: "8px 12px", background: "var(--gl2)",
               borderRadius: 10, border: "1px solid var(--gl-bd)",
             }}>
-              Tổng: <b style={{ fontSize: 16, color: scoreColor(value) }}>{formatCurrency(value, currencyUnit)}</b>
+              Tổng: <b style={{ fontSize: 16, color: scoreColor(value) }}>{formatCurrency(value)}</b>
             </div>
           </div>
         )}
@@ -154,13 +161,14 @@ export default function ScoreRow({ member, chips, loanAmount, currencyUnit, valu
         {mode === "simple" && (
           <div>
             <label className="label-caps" style={{ display: "block", marginBottom: 5 }}>
-              Giá trị ({unitLabel})
+              Giá trị (€)
             </label>
             <input
-              type="number"
-              value={value || ""}
-              onChange={(e) => onChange(Number(e.target.value) || 0)}
-              placeholder="0"
+              type="text"
+              inputMode="decimal"
+              value={simpleRaw}
+              onChange={(e) => handleSimpleChange(e.target.value)}
+              placeholder="0,00"
               style={{
                 width: "100%", background: "var(--gl2)",
                 border: "1.5px solid var(--gl-bd)", borderRadius: 10,

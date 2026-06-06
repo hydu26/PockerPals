@@ -9,21 +9,18 @@ import { useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase/client"
 import { formatCurrency, scoreColor } from "@/lib/utils/format-score"
 import type { ScoreMap } from "@/lib/types/app"
-import type { CurrencyUnit } from "@/lib/types/wizard"
 
 export default function HistoryPage() {
   const { id } = useParams<{ id: string }>()
   const { data: group } = useGroup(id)
   const { isGroupAdmin } = usePermissions()
   const qc = useQueryClient()
-  const [showEUR, setShowEUR] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
   if (!group) return null
 
   const isAdmin = isGroupAdmin(group.admin_emails)
-  const currencyUnit: CurrencyUnit = group.currency_unit === "EUR" ? "EUR" : "centime"
 
   const sessions = (group.sessions as unknown as {
     id: string; date: string; scores: ScoreMap; created_by: string | null; created_at: string
@@ -35,7 +32,6 @@ export default function HistoryPage() {
     if (!deleteId) return
     const targetId = deleteId
 
-    // Optimistic: remove session from cache immediately
     const prev = qc.getQueryData(["groups", id])
     qc.cancelQueries({ queryKey: ["groups", id] })
     qc.setQueryData<import("@/lib/types/app").GroupWithMeta>(["groups", id], (old) => {
@@ -60,7 +56,6 @@ export default function HistoryPage() {
       ])
       toast.success("Đã xoá phiên")
     } catch (e: unknown) {
-      // Rollback
       qc.setQueryData(["groups", id], prev)
       setDeleteId(targetId)
       toast.error(e instanceof Error ? e.message : "Lỗi khi xoá")
@@ -82,26 +77,6 @@ export default function HistoryPage() {
 
   return (
     <div>
-      {/* Currency toggle */}
-      {currencyUnit === "centime" && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <button
-            type="button"
-            onClick={() => setShowEUR((v) => !v)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "5px 12px", borderRadius: 20,
-              border: "1px solid var(--gl-bd)", background: "var(--gl)",
-              cursor: "pointer", fontFamily: "var(--fm)", fontSize: 12,
-              fontWeight: 700, color: showEUR ? "var(--ac)" : "var(--tx2)",
-              transition: "all var(--dur-f)",
-            }}
-          >
-            {showEUR ? "€ EUR" : "¢ centimes"}
-          </button>
-        </div>
-      )}
-
       <div className="flex flex-col gap-[10px]">
       {sessions.map((sess, i) => (
         <SessionCard
@@ -109,8 +84,6 @@ export default function HistoryPage() {
           session={sess}
           members={group.members}
           isAdmin={isAdmin}
-          currencyUnit={currencyUnit}
-          showEUR={showEUR}
           sessionNumber={totalSessions - i}
           onRequestDelete={() => setDeleteId(sess.id)}
         />
@@ -133,16 +106,12 @@ function SessionCard({
   session,
   members,
   isAdmin,
-  currencyUnit,
-  showEUR,
   sessionNumber,
   onRequestDelete,
 }: Readonly<{
   session: { id: string; date: string; scores: ScoreMap; created_by: string | null; created_at: string }
   members: { id: string; name: string; color: string }[]
   isAdmin: boolean
-  currencyUnit: CurrencyUnit
-  showEUR: boolean
   sessionNumber: number
   onRequestDelete: () => void
 }>) {
@@ -226,7 +195,7 @@ function SessionCard({
                 {m.name}
               </span>
               <span style={{ fontFamily: "var(--fm)", fontSize: 13, fontWeight: 700, color: scoreColor(score) }}>
-                {formatCurrency(score, currencyUnit, showEUR)}
+                {formatCurrency(score)}
               </span>
             </div>
           )
@@ -276,7 +245,6 @@ function DeleteModal({
           boxShadow: "inset 0 1px 0 0 var(--gl-hl), 0 24px 60px rgba(0,0,0,.6)",
           animation: "delete-modal-in .28s cubic-bezier(.34,1.56,.64,1)",
         }}>
-          {/* Icon + title */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             <div style={{
               width: 44, height: 44, borderRadius: 14, flexShrink: 0,
@@ -295,7 +263,6 @@ function DeleteModal({
             </div>
           </div>
 
-          {/* Warning */}
           <div style={{
             display: "flex", gap: 9, alignItems: "flex-start",
             padding: "10px 13px", borderRadius: 12,
