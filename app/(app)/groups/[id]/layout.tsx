@@ -10,8 +10,8 @@ import SettingsModal from "@/components/groups/settings-modal"
 
 const TABS = [
   { label: "Nhập",       icon: "📝", href: "" },
-  { label: "Lịch sử",   icon: "📋", href: "/history" },
   { label: "Xếp hạng",  icon: "🏆", href: "/rank" },
+  { label: "Lịch sử",   icon: "📋", href: "/history" },
   { label: "Thành viên", icon: "👥", href: "/members" },
 ] as const
 
@@ -43,7 +43,7 @@ export default function GroupLayout({ children }: Readonly<{ children: React.Rea
   // Redirect non-admins away from the score-entry tab (direct URL access)
   useEffect(() => {
     if (!isLoading && !checking && group && !isAdmin && pathname === base) {
-      router.replace(base + "/history")
+      router.replace(base + "/rank")
     }
   }, [isLoading, checking, group, isAdmin, pathname, base, router])
 
