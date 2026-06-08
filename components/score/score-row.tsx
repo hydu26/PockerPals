@@ -113,8 +113,7 @@ export default function ScoreRow({ member, chips, loanAmount, value, onChange }:
                   Tiền mặt (€)
                 </label>
                 <input
-                  type="text"
-                  inputMode="decimal"
+                  type="number"
                   value={cashAmount}
                   onChange={(e) => handleCashChange(e.target.value)}
                   placeholder="0,00"
@@ -164,8 +163,7 @@ export default function ScoreRow({ member, chips, loanAmount, value, onChange }:
               Giá trị (€)
             </label>
             <input
-              type="text"
-              inputMode="decimal"
+              type="number"
               value={simpleRaw}
               onChange={(e) => handleSimpleChange(e.target.value)}
               placeholder="0,00"
