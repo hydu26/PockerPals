@@ -85,6 +85,29 @@ function getHandName(score: number): { emoji: string; en: string; vn: string } {
   return                        { emoji: "🃏", en: "High Card",          vn: "Lá cao" }
 }
 
+type HandInfo = { emoji: string; en: string; vn: string }
+type ImprovementResult = {
+  current: HandInfo
+  target: HandInfo
+  outs: number
+  remaining: number
+}
+
+function getImprovement(hand: string[], board: string[]): ImprovementResult {
+  const myP = hand.map(parseRank)
+  const boardP = board.map(parseRank)
+  const knownSet = new Set([...hand, ...board])
+  const deck = ALL_DECK.filter(c => !knownSet.has(c))
+  const curScore = bestScore([...myP, ...boardP])
+  let outs = 0
+  let bestTarget = curScore
+  for (const c of deck) {
+    const s = bestScore([...myP, ...boardP, parseRank(c)])
+    if (s > curScore) { outs++; if (s > bestTarget) bestTarget = s }
+  }
+  return { current: getHandName(curScore), target: getHandName(bestTarget), outs, remaining: deck.length }
+}
+
 function runMonteCarlo(hand: string[], board: string[], numPlayers = 7, iters = 8000): CalcResult {
   const opponents = numPlayers - 1
   const knownSet = new Set([...hand, ...board])
@@ -161,14 +184,28 @@ function allUsedCards(
 }
 
 // ── CardSlot ───────────────────────────────────────────────────────
-function CardSlot({ card, label, onClick, disabled }: Readonly<{
-  card: string | null; label?: string; onClick: () => void; disabled?: boolean;
+function CardSlot({ card, label, onClick, onClear, disabled }: Readonly<{
+  card: string | null; label?: string; onClick: () => void; onClear?: () => void; disabled?: boolean;
 }>) {
   let cardBorder = `1.5px dashed var(--gl-bd)`
   if (card) cardBorder = cardIsRed(card) ? "1.5px solid rgba(239,68,68,.45)" : "1.5px solid var(--gl-bd)"
 
   return (
     <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+      {card && onClear && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onClear() }}
+          style={{
+            position: "absolute", top: 3, right: 3, zIndex: 1,
+            width: 16, height: 16, borderRadius: 5,
+            background: "var(--gl-bd)", border: "none",
+            color: "var(--tx3)", fontSize: 9, fontWeight: 800,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            lineHeight: 1,
+          }}
+        >✕</button>
+      )}
       <button
         type="button"
         onClick={onClick}
@@ -605,16 +642,16 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
       {/* ── Hỗ trợ Tab ── */}
       {tab === "support" && (
         <div>
-          {/* Board */}
+          {/* Hand */}
           <div style={{
             background: "var(--gl)", backdropFilter: "blur(20px)",
             border: "1px solid var(--gl-bd)", borderRadius: 16,
             padding: "15px", marginBottom: 12,
             boxShadow: "inset 0 1px 0 0 var(--gl-hl)",
           }}>
-             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <p style={{ fontFamily: "var(--fb)", fontSize: 12, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                🃏 Bài trên bàn
+                🤲 Bài trên tay
               </p>
              <button
                 type="button"
@@ -629,28 +666,6 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                 🔄 Ván mới
               </button>
             </div>
-            <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
-              {supportBoard.map((card, i) => (
-                <CardSlot
-                  key={BOARD_LABELS[i]}
-                  card={card}
-                  label={BOARD_LABELS[i]}
-                  onClick={() => setPickerTarget({ kind: "support-board", idx: i })}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Hand */}
-          <div style={{
-            background: "var(--gl)", backdropFilter: "blur(20px)",
-            border: "1px solid var(--gl-bd)", borderRadius: 16,
-            padding: "15px", marginBottom: 12,
-            boxShadow: "inset 0 1px 0 0 var(--gl-hl)",
-          }}>
-            <p style={{ fontFamily: "var(--fb)", fontSize: 12, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px" }}>
-              🤲 Bài trên tay
-            </p>
            
             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
               {([0, 1] as const).map((slot) => (
@@ -659,6 +674,31 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                   card={supportHand[slot]}
                   label={`Lá ${slot + 1}`}
                   onClick={() => setPickerTarget({ kind: "support-hand", slot })}
+                  onClear={() => setSupportHand(prev => { const next = [...prev] as [string|null, string|null]; next[slot] = null; return next })}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Board */}
+          <div style={{
+            background: "var(--gl)", backdropFilter: "blur(20px)",
+            border: "1px solid var(--gl-bd)", borderRadius: 16,
+            padding: "15px", marginBottom: 12,
+            boxShadow: "inset 0 1px 0 0 var(--gl-hl)",
+          }}>
+            <p style={{ fontFamily: "var(--fb)", fontSize: 12, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px" }}>
+              🃏 Bài trên bàn
+            </p>
+
+            <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
+              {supportBoard.map((card, i) => (
+                <CardSlot
+                  key={BOARD_LABELS[i]}
+                  card={card}
+                  label={BOARD_LABELS[i]}
+                  onClick={() => setPickerTarget({ kind: "support-board", idx: i })}
+                  onClear={() => setSupportBoard(prev => { const next = [...prev]; next[i] = null; return next })}
                 />
               ))}
             </div>
@@ -697,7 +737,7 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
               background: "var(--gl2)", border: "1px solid var(--gl-bd)",
             }}>
               <p style={{ fontFamily: "var(--fm)", fontSize: 12, color: "var(--tx2)", fontWeight: 600 }}>
-                Tổng số người chơi
+                Người còn trong ván
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <button
@@ -726,18 +766,18 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              {/* Win rate */}
-              <div style={{
-                flex: 1, padding: "14px 12px", borderRadius: 14,
-                background: "var(--gl2)", border: "1px solid var(--gl-bd)",
-                textAlign: "center",
-              }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6, fontFamily: "var(--fb)" }}>
+            {/* Win rate — full width */}
+            <div style={{
+              marginTop: 14, padding: "14px 16px", borderRadius: 14,
+              background: "var(--gl2)", border: "1px solid var(--gl-bd)",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4, fontFamily: "var(--fb)" }}>
                   Tỉ lệ thắng
                 </p>
                 {calculating ? (
-                  <div style={{ display: "flex", gap: 5, justifyContent: "center", paddingTop: 4 }}>
+                  <div style={{ display: "flex", gap: 5, paddingTop: 2 }}>
                     {[0,1,2].map((i) => (
                       <div key={i} style={{
                         width: 7, height: 7, borderRadius: "50%", background: "var(--ac)",
@@ -746,82 +786,92 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                     ))}
                   </div>
                 ) : calcResult ? (
-                  <>
-                    <p style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--fm)", color: calcResult.win >= 50 ? "var(--win)" : "var(--lose)", lineHeight: 1 }}>
-                      {calcResult.win.toFixed(1)}%
-                    </p>
-                    <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 4 }}>
-                      Hòa {calcResult.tie.toFixed(1)}%
-                    </p>
-                  </>
+                  <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--fm)", color: calcResult.win >= 50 ? "var(--win)" : "var(--lose)", lineHeight: 1 }}>
+                    {calcResult.win.toFixed(1)}%
+                  </p>
                 ) : (
-                  <p style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx3)" }}>—</p>
+                  <p style={{ fontSize: 24, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx3)" }}>—</p>
                 )}
               </div>
-
-              {/* Outs / connection */}
-              <div style={{
-                flex: 1, padding: "14px 12px", borderRadius: 14,
-                background: "var(--gl2)", border: "1px solid var(--gl-bd)",
-                textAlign: "center",
-              }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6, fontFamily: "var(--fb)" }}>
-                  Tỉ lệ liên kết
+              {calcResult && !calculating && (
+                <p style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--fm)", fontWeight: 600 }}>
+                  Hòa {calcResult.tie.toFixed(1)}%
                 </p>
-                {calculating ? (
-                  <div style={{ display: "flex", gap: 5, justifyContent: "center", paddingTop: 4 }}>
-                    {[0,1,2].map((i) => (
-                      <div key={i} style={{
-                        width: 7, height: 7, borderRadius: "50%", background: "var(--ac)",
-                        animation: `dot-pulse 1.1s ease-in-out ${i * 0.22}s infinite`,
-                      }} />
-                    ))}
-                  </div>
-                ) : calcResult && calcResult.outs > 0 ? (
-                  <>
-                    <p style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--ac)", lineHeight: 1 }}>
-                      {((calcResult.outs / calcResult.remaining) * 100).toFixed(1)}%
-                    </p>
-                    <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 4 }}>
-                      {calcResult.outs} outs / {calcResult.remaining} lá
-                    </p>
-                  </>
-                ) : calcResult && supportBoard.filter(Boolean).length >= 5 ? (
-                  <>
-                    <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx3)", lineHeight: 1 }}>River</p>
-                    <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 4 }}>Vòng cuối</p>
-                  </>
-                ) : (
-                  <p style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx3)" }}>—</p>
-                )}
-              </div>
+              )}
             </div>
 
-            {/* Current hand */}
-            {(() => {
-              const hand = supportHand.filter(Boolean) as string[]
-              const board = supportBoard.filter(Boolean) as string[]
-              if (hand.length < 2 || board.length < 3) return null
-              const score = bestScore([...hand.map(parseRank), ...board.map(parseRank)])
-              const { emoji, en, vn } = getHandName(score)
-              return (
-                <div style={{
-                  marginTop: 14, padding: "12px 16px", borderRadius: 14,
-                  background: "var(--gl2)", border: "1px solid var(--gl-bd)",
-                  display: "flex", alignItems: "center", gap: 10,
-                }}>
-                  <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", fontFamily: "var(--fb)", marginBottom: 2 }}>
-                      Bộ bài hiện tại
-                    </p>
-                    <p style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx)", lineHeight: 1 }}>
-                      {vn} <span style={{ fontSize: 11, fontWeight: 600, color: "var(--tx3)" }}>· {en}</span>
-                    </p>
-                  </div>
+            {/* Bộ bài & Liên kết — full width */}
+            <div style={{
+              marginTop: 10, padding: "14px 16px", borderRadius: 14,
+              background: "var(--gl2)", border: "1px solid var(--gl-bd)",
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10, fontFamily: "var(--fb)" }}>
+                Bộ bài
+              </p>
+              {calculating ? (
+                <div style={{ display: "flex", gap: 5, paddingBottom: 2 }}>
+                  {[0,1,2].map((i) => (
+                    <div key={i} style={{
+                      width: 7, height: 7, borderRadius: "50%", background: "var(--ac)",
+                      animation: `dot-pulse 1.1s ease-in-out ${i * 0.22}s infinite`,
+                    }} />
+                  ))}
                 </div>
-              )
-            })()}
+              ) : (() => {
+                const hand = supportHand.filter(Boolean) as string[]
+                const brd  = supportBoard.filter(Boolean) as string[]
+                if (hand.length < 2 || brd.length < 3) {
+                  return <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--fm)", color: "var(--tx3)" }}>—</p>
+                }
+                const imp = getImprovement(hand, brd)
+                if (brd.length >= 5) {
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 26 }}>{imp.current.emoji}</span>
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx)", lineHeight: 1 }}>{imp.current.vn}</p>
+                        <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 2 }}>Vòng cuối · {imp.current.en}</p>
+                      </div>
+                    </div>
+                  )
+                }
+                if (imp.outs === 0) {
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: 26 }}>{imp.current.emoji}</span>
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx)", lineHeight: 1 }}>{imp.current.vn}</p>
+                        <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 2 }}>Không thể cải thiện thêm</p>
+                      </div>
+                    </div>
+                  )
+                }
+                const pct = (imp.outs / imp.remaining) * 100
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                    {/* Current hand */}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 22, lineHeight: 1, marginBottom: 3 }}>{imp.current.emoji}</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx2)", lineHeight: 1 }}>{imp.current.vn}</p>
+                      <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 2 }}>Hiện tại</p>
+                    </div>
+                    {/* Center: arrow + percentage */}
+                    <div style={{ textAlign: "center", padding: "0 12px" }}>
+                      <p style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--ac)", lineHeight: 1 }}>
+                        {pct.toFixed(1)}%
+                      </p>
+                      <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 3 }}>→</p>
+                    </div>
+                    {/* Target hand */}
+                    <div style={{ flex: 1, textAlign: "right" }}>
+                      <p style={{ fontSize: 22, lineHeight: 1, marginBottom: 3 }}>{imp.target.emoji}</p>
+                      <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "var(--fm)", color: "var(--tx)", lineHeight: 1 }}>{imp.target.vn}</p>
+                      <p style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 2 }}>Mục tiêu</p>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
 
             {!calcResult && (
               <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 10, textAlign: "center", opacity: 0.7 }}>
