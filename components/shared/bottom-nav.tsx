@@ -2,16 +2,22 @@
 
 import { useRouter, usePathname } from "next/navigation"
 import type { CSSProperties } from "react"
+import { usePermissions } from "@/lib/hooks/use-permissions"
 
-const NAV_ITEMS = [
-  { icon: "🏠", label: "Nhóm",       href: "/" },
-  { icon: "🤖", label: "Cộng Sự", href: "/ai" },
-  { icon: "📖", label: "Luật chơi",  href: "/rules" },
-] as const
+const BASE_ITEMS = [
+  { icon: "🏠", label: "Nhóm",      href: "/" },
+  { icon: "🤖", label: "Cộng Sự",   href: "/ai" },
+  { icon: "📖", label: "Luật chơi", href: "/rules" },
+]
+
+const ADMIN_ITEM = { icon: "⚙️", label: "Admin", href: "/admin" }
 
 export default function BottomNav() {
-  const router   = useRouter()
-  const pathname = usePathname()
+  const router      = useRouter()
+  const pathname    = usePathname()
+  const { isSuperAdmin } = usePermissions()
+
+  const NAV_ITEMS = isSuperAdmin ? [...BASE_ITEMS, ADMIN_ITEM] : BASE_ITEMS
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href)

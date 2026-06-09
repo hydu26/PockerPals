@@ -94,15 +94,9 @@ export default function NewGroupPage() {
         if (membersErr) throw membersErr
       }
 
-      const adminEmails = Array.from(
-        new Set([
-          user.email,
-          ...draft.admin_emails.map((e) => e.trim()).filter(Boolean),
-        ])
-      )
       const { error: adminsErr } = await supabase
         .from("group_admins")
-        .insert(adminEmails.map((email) => ({ group_id: group.id, email })))
+        .insert([{ group_id: group.id, email: user.email }])
       if (adminsErr) throw adminsErr
 
       toast.success("Tạo nhóm thành công!")

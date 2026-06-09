@@ -37,9 +37,6 @@ export default function StepPreview({
           value={draft.password || "Không có"}
           mono={!!draft.password}
         />
-        {draft.admin_emails.length > 0 && (
-          <Row label="Admin" value={draft.admin_emails.join(", ")} mono />
-        )}
       </PreviewCard>
 
       {/* Step 4: Members */}

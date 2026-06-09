@@ -20,7 +20,6 @@ export type WizardDraft = {
   currency_unit: CurrencyUnit
   chips: WizardChip[]
   password: string
-  admin_emails: string[]
   members: WizardMember[]
 }
 
@@ -46,6 +45,5 @@ export const DEFAULT_DRAFT: WizardDraft = {
     { id: "c4", name: "Đen",   color: "#1e293b", value: 5   },
   ],
   password: "",
-  admin_emails: [],
   members: [],
 }

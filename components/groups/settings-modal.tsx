@@ -48,11 +48,7 @@ export default function SettingsModal({
     Array.isArray(group.chips) ? (group.chips as Chip[]) : []
   )
   const [password, setPassword] = useState("")
-  const [adminEmails, setAdminEmails] = useState<string[]>(group.admin_emails)
-  const [newAdminEmail, setNewAdminEmail] = useState("")
-  const originalEmails = group.admin_emails
   const [saving, setSaving] = useState(false)
-  const [resendingEmail, setResendingEmail] = useState<string | null>(null)
   const [colorPickChip, setColorPickChip] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -72,43 +68,6 @@ export default function SettingsModal({
   }
 
   const removeChip = (id: string) => setChips((prev) => prev.filter((c) => c.id !== id))
-
-  const removeAdmin = (emailToRemove: string) =>
-    setAdminEmails((prev) => prev.filter((e) => e !== emailToRemove))
-
-  const handleResendInvite = async (email: string) => {
-    setResendingEmail(email)
-    try {
-      const res = await fetch("/api/admin/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails: [email] }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        toast.error(`Lỗi ${res.status}: ${(body as { error?: string }).error ?? "không xác định"}`)
-        return
-      }
-      const { results } = (await res.json()) as { results: { email: string; status: string; message?: string }[] }
-      const r = results[0]
-      if (!r) { toast.error("Không có kết quả trả về"); return }
-      if (r.status === "invited") toast.success(`Đã gửi lại lời mời đến ${email}`)
-      else if (r.status === "exists") toast.info("Tài khoản đã tồn tại — người dùng đăng nhập bình thường")
-      else toast.error(`Lỗi Supabase: ${r.message ?? "không xác định"}`)
-    } catch {
-      toast.error("Lỗi kết nối")
-    } finally {
-      setResendingEmail(null)
-    }
-  }
-
-  const addAdmin = () => {
-    const email = newAdminEmail.trim().toLowerCase()
-    if (!email.includes("@")) { toast.error("Email không hợp lệ"); return }
-    if (adminEmails.includes(email)) { toast.error("Email đã có"); return }
-    setAdminEmails((prev) => [...prev, email])
-    setNewAdminEmail("")
-  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -132,32 +91,6 @@ export default function SettingsModal({
         })
         .eq("id", group.id)
       if (groupErr) throw groupErr
-
-      if (isSuperAdmin) {
-        await supabase.from("group_admins").delete().eq("group_id", group.id)
-        const allEmails = [...new Set(adminEmails.map((e) => e.trim()).filter(Boolean))]
-        if (allEmails.length > 0) {
-          const { error: admErr } = await supabase
-            .from("group_admins")
-            .insert(allEmails.map((email) => ({ group_id: group.id, email })))
-          if (admErr) throw admErr
-        }
-
-        // Invite các email mới (chưa có trong danh sách gốc)
-        const newEmails = allEmails.filter((e) => !originalEmails.includes(e))
-        if (newEmails.length > 0) {
-          const res = await fetch("/api/admin/invite", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ emails: newEmails }),
-          })
-          const { results } = (await res.json()) as { results: { status: string }[] }
-          const invitedCount = results.filter((r) => r.status === "invited").length
-          if (invitedCount > 0) {
-            toast.success(`Đã gửi email mời đến ${invitedCount} admin mới`)
-          }
-        }
-      }
 
       await qc.invalidateQueries({ queryKey: ["groups", group.id] })
       await qc.invalidateQueries({ queryKey: ["groups"] })
@@ -413,84 +346,6 @@ export default function SettingsModal({
               style={{ ...inp, fontFamily: "var(--fm)", letterSpacing: 1, fontWeight: 600 }}
             />
           </div>
-
-          {/* Admin emails */}
-          {isSuperAdmin && (
-            <div style={card}>
-              <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 7 }}>
-                🔐 Admin nhóm
-              </p>
-              <p style={{ fontSize: 12, color: "var(--tx2)", marginBottom: 12, lineHeight: 1.5 }}>
-                Email được phép chỉnh sửa nhóm này.
-              </p>
-
-              {adminEmails.map((email) => (
-                <div key={email} style={{
-                  display: "flex", alignItems: "center", gap: 9,
-                  background: "var(--gl2)", border: "1px solid var(--gl-bd)",
-                  borderRadius: 10, padding: "8px 12px", marginBottom: 7,
-                }}>
-                  <span style={{ fontSize: 14 }}>👤</span>
-                  <span style={{
-                    flex: 1, fontFamily: "var(--fm)", fontSize: 12,
-                    color: "var(--tx)", fontWeight: 600,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {email}
-                  </span>
-                  <button
-                    onClick={() => handleResendInvite(email)}
-                    disabled={resendingEmail === email}
-                    title="Gửi lại lời mời"
-                    style={{
-                      width: 24, height: 24, borderRadius: 7,
-                      border: "1px solid var(--gl-bd)", background: "transparent",
-                      cursor: resendingEmail === email ? "not-allowed" : "pointer",
-                      color: "var(--ac)", fontSize: 11,
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                      opacity: resendingEmail === email ? 0.5 : 1,
-                    }}
-                  >
-                    {resendingEmail === email ? "…" : "📨"}
-                  </button>
-                  <button
-                    onClick={() => removeAdmin(email)}
-                    style={{
-                      width: 24, height: 24, borderRadius: 7,
-                      border: "1px solid var(--gl-bd)", background: "transparent",
-                      cursor: "pointer", color: "var(--lose)", fontSize: 10,
-                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <input
-                  type="email"
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addAdmin()}
-                  placeholder="email@example.com"
-                  style={{ ...inp, flex: 1, marginBottom: 0 }}
-                />
-                <button
-                  onClick={addAdmin}
-                  style={{
-                    padding: "11px 14px", borderRadius: 12, border: "none",
-                    background: "linear-gradient(135deg,var(--ac),var(--ac3))",
-                    color: "white", fontSize: 13, fontWeight: 700,
-                    cursor: "pointer", fontFamily: "var(--fb)", flexShrink: 0,
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,.3), 0 3px 10px var(--gw)",
-                  }}
-                >
-                  ＋
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Delete group */}
           {isSuperAdmin && (
