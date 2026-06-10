@@ -221,6 +221,7 @@ function CardSlot({ card, label, onClick, onClear, disabled }: Readonly<{
           opacity: disabled && !card ? 0.5 : 1,
         }}
       >
+        
         {card ? (
           <span style={{
             fontFamily: "var(--fm)", fontSize: 14, fontWeight: 800,
