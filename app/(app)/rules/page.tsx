@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PlayingCard } from "@/components/shared/playing-card";
 
 const FAQS = [
   {
@@ -45,38 +46,6 @@ const FAQS = [
   },
 ]
 
-/* Mini playing card */
-function Card({
-  rank,
-  suit,
-  red,
-}: Readonly<{ rank: string; suit: string; red?: boolean }>) {
-  return (
-    <span
-      style={{
-        width: 30,
-        height: 42,
-        background: "#fafafa",
-        borderRadius: 6,
-        display: "inline-flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "var(--fm)",
-        fontWeight: 800,
-        lineHeight: 1.05,
-        boxShadow:
-          "0 2px 6px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.7)",
-        border: "1px solid rgba(0,0,0,.12)",
-        color: red ? "#d92020" : "#1a1a1a",
-        flexShrink: 0,
-      }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 800 }}>{rank}</span>
-      <span style={{ fontSize: 13 }}>{suit}</span>
-    </span>
-  );
-}
 
 function Plus() {
   return (
@@ -112,11 +81,11 @@ const HANDS: HandData[] = [
     vn: "Sảnh hoàng gia · Sảnh thùng tối thượng",
     cards: (
       <>
-        <Card rank="10" suit="♠" />
-        <Card rank="J" suit="♠" />
-        <Card rank="Q" suit="♠" />
-        <Card rank="K" suit="♠" />
-        <Card rank="A" suit="♠" />
+        <PlayingCard rank="10" suit="♠" />
+        <PlayingCard rank="J" suit="♠" />
+        <PlayingCard rank="Q" suit="♠" />
+        <PlayingCard rank="K" suit="♠" />
+        <PlayingCard rank="A" suit="♠" />
       </>
     ),
     desc: (
@@ -134,11 +103,11 @@ const HANDS: HandData[] = [
     vn: "Sảnh thùng",
     cards: (
       <>
-        <Card rank="5" suit="♥" red />
-        <Card rank="6" suit="♥" red />
-        <Card rank="7" suit="♥" red />
-        <Card rank="8" suit="♥" red />
-        <Card rank="9" suit="♥" red />
+        <PlayingCard rank="5" suit="♥" />
+        <PlayingCard rank="6" suit="♥" />
+        <PlayingCard rank="7" suit="♥" />
+        <PlayingCard rank="8" suit="♥" />
+        <PlayingCard rank="9" suit="♥" />
       </>
     ),
     desc: (
@@ -156,12 +125,12 @@ const HANDS: HandData[] = [
     vn: "Tứ quý",
     cards: (
       <>
-        <Card rank="K" suit="♠" />
-        <Card rank="K" suit="♥" red />
-        <Card rank="K" suit="♦" red />
-        <Card rank="K" suit="♣" />
+        <PlayingCard rank="K" suit="♠" />
+        <PlayingCard rank="K" suit="♥" />
+        <PlayingCard rank="K" suit="♦" />
+        <PlayingCard rank="K" suit="♣" />
         <Plus />
-        <Card rank="5" suit="♣" />
+        <PlayingCard rank="5" suit="♣" />
       </>
     ),
     desc: (
@@ -179,12 +148,12 @@ const HANDS: HandData[] = [
     vn: "Cù lũ · Bộ ba + đôi",
     cards: (
       <>
-        <Card rank="J" suit="♥" red />
-        <Card rank="J" suit="♦" red />
-        <Card rank="J" suit="♠" />
+        <PlayingCard rank="J" suit="♥" />
+        <PlayingCard rank="J" suit="♦" />
+        <PlayingCard rank="J" suit="♠" />
         <Plus />
-        <Card rank="9" suit="♣" />
-        <Card rank="9" suit="♥" red />
+        <PlayingCard rank="9" suit="♣" />
+        <PlayingCard rank="9" suit="♥" />
       </>
     ),
     desc: (
@@ -202,11 +171,11 @@ const HANDS: HandData[] = [
     vn: "Thùng",
     cards: (
       <>
-        <Card rank="A" suit="♦" red />
-        <Card rank="J" suit="♦" red />
-        <Card rank="8" suit="♦" red />
-        <Card rank="6" suit="♦" red />
-        <Card rank="2" suit="♦" red />
+        <PlayingCard rank="A" suit="♦" />
+        <PlayingCard rank="J" suit="♦" />
+        <PlayingCard rank="8" suit="♦" />
+        <PlayingCard rank="6" suit="♦" />
+        <PlayingCard rank="2" suit="♦" />
       </>
     ),
     desc: (
@@ -224,11 +193,11 @@ const HANDS: HandData[] = [
     vn: "Sảnh",
     cards: (
       <>
-        <Card rank="5" suit="♠" />
-        <Card rank="6" suit="♥" red />
-        <Card rank="7" suit="♦" red />
-        <Card rank="8" suit="♣" />
-        <Card rank="9" suit="♠" />
+        <PlayingCard rank="5" suit="♠" />
+        <PlayingCard rank="6" suit="♥" />
+        <PlayingCard rank="7" suit="♦" />
+        <PlayingCard rank="8" suit="♣" />
+        <PlayingCard rank="9" suit="♠" />
       </>
     ),
     desc: (
@@ -246,12 +215,12 @@ const HANDS: HandData[] = [
     vn: "Sám cô · Bộ ba",
     cards: (
       <>
-        <Card rank="Q" suit="♠" />
-        <Card rank="Q" suit="♥" red />
-        <Card rank="Q" suit="♦" red />
+        <PlayingCard rank="Q" suit="♠" />
+        <PlayingCard rank="Q" suit="♥" />
+        <PlayingCard rank="Q" suit="♦" />
         <Plus />
-        <Card rank="K" suit="♣" />
-        <Card rank="7" suit="♥" red />
+        <PlayingCard rank="K" suit="♣" />
+        <PlayingCard rank="7" suit="♥" />
       </>
     ),
     desc: (
@@ -269,13 +238,13 @@ const HANDS: HandData[] = [
     vn: "Đôi đôi · Hai cặp",
     cards: (
       <>
-        <Card rank="A" suit="♠" />
-        <Card rank="A" suit="♥" red />
+        <PlayingCard rank="A" suit="♠" />
+        <PlayingCard rank="A" suit="♥" />
         <Plus />
-        <Card rank="8" suit="♦" red />
-        <Card rank="8" suit="♣" />
+        <PlayingCard rank="8" suit="♦" />
+        <PlayingCard rank="8" suit="♣" />
         <Plus />
-        <Card rank="K" suit="♥" red />
+        <PlayingCard rank="K" suit="♥" />
       </>
     ),
     desc: (
@@ -293,12 +262,12 @@ const HANDS: HandData[] = [
     vn: "Đôi · Cặp đôi",
     cards: (
       <>
-        <Card rank="10" suit="♠" />
-        <Card rank="10" suit="♥" red />
+        <PlayingCard rank="10" suit="♠" />
+        <PlayingCard rank="10" suit="♥" />
         <Plus />
-        <Card rank="A" suit="♦" red />
-        <Card rank="K" suit="♣" />
-        <Card rank="5" suit="♠" />
+        <PlayingCard rank="A" suit="♦" />
+        <PlayingCard rank="K" suit="♣" />
+        <PlayingCard rank="5" suit="♠" />
       </>
     ),
     desc: (
@@ -316,11 +285,11 @@ const HANDS: HandData[] = [
     vn: "Lá cao · Mậu thầu",
     cards: (
       <>
-        <Card rank="A" suit="♦" red />
-        <Card rank="J" suit="♥" red />
-        <Card rank="9" suit="♣" />
-        <Card rank="6" suit="♠" />
-        <Card rank="3" suit="♥" red />
+        <PlayingCard rank="A" suit="♦" />
+        <PlayingCard rank="J" suit="♥" />
+        <PlayingCard rank="9" suit="♣" />
+        <PlayingCard rank="6" suit="♠" />
+        <PlayingCard rank="3" suit="♥" />
       </>
     ),
     desc: (

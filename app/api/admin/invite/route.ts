@@ -26,7 +26,6 @@ export async function POST(request: Request) {
 
   for (const email of emails) {
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { redirectTo })
-    console.log("[invite]", email, "data:", data?.user?.id ?? null, "error:", error?.message ?? null)
     if (!error && data?.user) {
       results.push({ email, status: "invited" })
     } else if (error?.message.toLowerCase().includes("already")) {

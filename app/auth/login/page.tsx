@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import Link from "next/link"
+import Image from "next/image"
 import { Eye, EyeOff } from "lucide-react"
+import { useTheme } from "next-themes"
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -32,6 +34,9 @@ const labelStyle: React.CSSProperties = {
 }
 
 function LoginPageInner() {
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === "light" ? "/logo/logo_light.webp" : "/logo/logo_dark.webp"
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const authError = searchParams.get("error") === "auth"
@@ -108,6 +113,7 @@ function LoginPageInner() {
     }
   }
 
+ 
   return (
     <div style={{
       minHeight: "100vh",
@@ -116,14 +122,17 @@ function LoginPageInner() {
       padding: "24px 22px", position: "relative", zIndex: 1,
     }}>
       {/* Brand */}
-      <Link href="/" style={{
-        width: 52, height: 52, borderRadius: 16,
-        background: "linear-gradient(135deg,var(--ac),var(--ac3))",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 26,
-        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,.3), 0 6px 20px var(--gw)",
-        marginBottom: 32,
-      }}>🃏</Link>
+      <Link
+        href="/"
+        style={{
+          marginBottom: 24,
+        }}
+      >
+        <Image
+          src={logoSrc}
+          alt="Logo" width={64} height={64} style={{ objectFit: "contain" }}
+        />
+      </Link>
 
       {/* Card */}
       <div style={{

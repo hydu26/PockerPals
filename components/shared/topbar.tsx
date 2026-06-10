@@ -1,10 +1,15 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import ThemeToggle from "./theme-toggle"
 import LoginButton from "./login-button"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function TopBar() {
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === "light" ? "/logo/logo_light.webp" : "/logo/logo_dark.webp"
+
   return (
     <header
       style={{
@@ -23,21 +28,11 @@ export default function TopBar() {
       {/* Brand icon only */}
        <Link
         href="/"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 14,
-          background: "linear-gradient(135deg, var(--ac), var(--ac3))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 28,
-          boxShadow:
-            "inset 0 1px 0 0 rgba(255,255,255,.3), 0 4px 14px var(--gw)",
-          color: "#fff",
-        }}
       >
-        🃏
+        <Image
+          src={logoSrc}
+          alt="Logo" width={44} height={44} style={{ objectFit: "contain" }}
+        />
       </Link>
 
       {/* Right: theme toggle + login */}

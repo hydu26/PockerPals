@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useTheme } from "next-themes"
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -33,6 +35,9 @@ const labelStyle: React.CSSProperties = {
 
 export default function UpdatePasswordPage() {
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const logoSrc = resolvedTheme === "light" ? "/logo/logo_light.webp" : "/logo/logo_dark.webp"
+
   const [password, setPassword]     = useState("")
   const [confirm, setConfirm]       = useState("")
   const [showPwd, setShowPwd]       = useState(false)
@@ -82,6 +87,7 @@ export default function UpdatePasswordPage() {
   const pwdMatch   = confirm.length > 0 && password === confirm
   const pwdNoMatch = confirm.length > 0 && password !== confirm
 
+ 
   return (
     <div style={{
       minHeight: "100vh",
@@ -90,14 +96,17 @@ export default function UpdatePasswordPage() {
       padding: "24px 22px", position: "relative", zIndex: 1,
     }}>
       {/* Brand icon */}
-      <Link href="/" style={{
-        width: 52, height: 52, borderRadius: 16,
-        background: "linear-gradient(135deg,var(--ac),var(--ac3))",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 26,
-        boxShadow: "inset 0 1px 0 0 rgba(255,255,255,.3), 0 6px 20px var(--gw)",
-        marginBottom: 32,
-      }}>🃏</Link>
+      <Link
+        href="/"
+        style={{
+          marginBottom: 24,
+        }}
+      >
+        <Image
+          src={logoSrc}
+          alt="Logo" width={64} height={64} style={{ objectFit: "contain" }}
+        />
+      </Link>
 
       {/* Card */}
       <div style={{

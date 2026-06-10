@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
 import { usePermissions } from "@/lib/hooks/use-permissions"
+import { CardBackDisplay, CardSlot } from "@/components/shared/playing-card"
 
 // ── Card constants ─────────────────────────────────────────────────
 const SUITS = ["♥", "♦", "♣", "♠"] as const
@@ -164,11 +165,144 @@ type PickerTarget =
   | { kind: "support-hand"; slot: 0 | 1 }
   | { kind: "support-board"; idx: number }
 
-// ── Helpers ────────────────────────────────────────────────────────
-function cardIsRed(card: string) {
-  return card.includes("♥") || card.includes("♦")
+// ── Card back settings ──────────────────────────────────────────────
+type CardBackId = "chelsea" | "arsenal" | "liverpool" | "mu" | "madrid" | "barca"
+
+const CARD_BACKS: ReadonlyArray<{
+  readonly id: CardBackId
+  readonly label: string
+  readonly color: string
+  readonly image: string
+}> = [
+  { id: "chelsea",   label: "Chelsea",          color: "#034694",  image: "/card-backs/chelsea.webp" },
+  { id: "arsenal",   label: "Arsenal",          color: "#EF0107",  image: "/card-backs/arsenal.webp" },
+  { id: "liverpool", label: "Liverpool",        color: "#c8102E",  image: "/card-backs/liverpool.webp" },
+  { id: "mu",        label: "Manchester United",color: "#DA291C",  image: "/card-backs/mu.webp" },
+  { id: "madrid",    label: "Real Madrid",      color: "#fefefe",  image: "/card-backs/madrid.webp" },
+  { id: "barca",     label: "Barcelona",        color: "#edbb00",  image: "/card-backs/barca.webp" },
+]
+
+const CARD_BACK_KEY = "pb_card_back"
+
+function CardSettingsModal({ current, onChange, onClose }: Readonly<{
+  current: CardBackId
+  onChange: (id: CardBackId) => void
+  onClose: () => void
+}>) {
+  return (
+    <>
+      <style>{`
+        @keyframes settings-in {
+          from { opacity: 0; transform: scale(.94); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "var(--overlay)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+        }}
+        onClick={onClose}
+      >
+        <div
+          style={{
+            width: "100%", maxWidth: 340,
+            maxHeight: "calc(100dvh - 32px)",
+            background: "var(--picker-bg)",
+            border: "1px solid var(--gl-bd)",
+            borderRadius: 24, overflow: "hidden",
+            display: "flex", flexDirection: "column",
+            boxShadow: "0 24px 64px rgba(0,0,0,.7)",
+            animation: "settings-in .22s cubic-bezier(.34,1.4,.64,1)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{
+            padding: "16px 18px 14px", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            borderBottom: "1px solid var(--gl-bd)",
+          }}>
+            <div>
+              <p style={{ fontFamily: "var(--fb)", fontSize: 16, fontWeight: 800, color: "var(--tx)", margin: 0 }}>
+                Bộ bài
+              </p>
+              <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", margin: "2px 0 0" }}>
+                Màu mặt sau lá bài
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: 34, height: 34, borderRadius: 11,
+                border: "1px solid var(--gl-bd)", background: "var(--gl2)",
+                color: "var(--tx2)", fontSize: 15, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >✕</button>
+          </div>
+
+          <div style={{
+            flex: 1, minHeight: 0, overflowY: "auto",
+            padding: "14px 16px 20px",
+            display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14,
+          }}>
+            {CARD_BACKS.map((opt) => {
+              const selected = current === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => { onChange(opt.id); onClose() }}
+                  style={{
+                    background: "none", border: "none",
+                    cursor: "pointer", padding: 0,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                  }}
+                >
+                  <div style={{
+                    width: "100%", aspectRatio: "63/88",
+                    background: opt.color, borderRadius: 16,
+                    position: "relative", overflow: "hidden",
+                    border: selected ? "2.5px solid var(--ac)" : "1.5px solid rgba(255,255,255,.1)",
+                    boxShadow: selected
+                      ? "0 0 0 3px var(--ac), 0 6px 18px rgba(0,0,0,.5)"
+                      : "0 3px 10px rgba(0,0,0,.45)",
+                    transition: "all .2s",
+                    "--card-back-image": `url('${opt.image}')`,
+                  } as React.CSSProperties}>
+                    <CardBackDisplay />
+                    {selected && (
+                      <span style={{
+                        position: "absolute", bottom: 8, right: 8,
+                        width: 20, height: 20, borderRadius: 10,
+                        background: "var(--ac)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 800, color: "#0a0514",
+                      }}>✓</span>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: 11, fontFamily: "var(--fm)",
+                    color: selected ? "var(--tx)" : "var(--tx3)",
+                    fontWeight: selected ? 700 : 400,
+                    textAlign: "center",
+                  }}>{opt.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </>
+  )
 }
 
+// ── Helpers ────────────────────────────────────────────────────────
 function allUsedCards(
   board: (string | null)[],
   players: Player[],
@@ -183,66 +317,6 @@ function allUsedCards(
   return used
 }
 
-// ── CardSlot ───────────────────────────────────────────────────────
-function CardSlot({ card, label, onClick, onClear, disabled }: Readonly<{
-  card: string | null; label?: string; onClick: () => void; onClear?: () => void; disabled?: boolean;
-}>) {
-  let cardBorder = `1.5px dashed var(--gl-bd)`
-  if (card) cardBorder = cardIsRed(card) ? "1.5px solid rgba(239,68,68,.45)" : "1.5px solid var(--gl-bd)"
-
-  return (
-    <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-      {card && onClear && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onClear() }}
-          style={{
-            position: "absolute", top: 3, right: 3, zIndex: 1,
-            width: 16, height: 16, borderRadius: 5,
-            background: "var(--gl-bd)", border: "none",
-            color: "var(--tx3)", fontSize: 9, fontWeight: 800,
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            lineHeight: 1,
-          }}
-        >✕</button>
-      )}
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        style={{
-          width: "100%", height: 62, borderRadius: 10,
-          border: cardBorder,
-          background: card ? "var(--gl)" : "var(--card-empty)",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          cursor: disabled ? "default" : "pointer", padding: 0, gap: 2,
-          boxShadow: card ? "inset 0 1px 0 0 var(--gl-hl)" : "none",
-          transition: "all var(--dur-f)",
-          opacity: disabled && !card ? 0.5 : 1,
-        }}
-      >
-        
-        {card ? (
-          <span style={{
-            fontFamily: "var(--fm)", fontSize: 14, fontWeight: 800,
-            color: cardIsRed(card) ? "#ef4444" : "var(--tx)", lineHeight: 1,
-          }}>
-            {card}
-          </span>
-        ) : (
-          <>
-            {label && (
-              <span style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
-                {label}
-              </span>
-            )}
-            <span style={{ fontSize: 18, color: "var(--tx3)", lineHeight: 1, opacity: 0.6 }}>+</span>
-          </>
-        )}
-      </button>
-    </div>
-  )
-}
 
 // ── CardPicker ─────────────────────────────────────────────────────
 function CardPicker({ used, onPick, onClose }: Readonly<{
@@ -253,36 +327,43 @@ function CardPicker({ used, onPick, onClose }: Readonly<{
   return (
     <>
       <style>{`
-        @keyframes picker-up {
-          from { opacity: 0; transform: translateY(60px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes picker-in {
+          from { opacity: 0; transform: scale(.94); }
+          to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
       <div style={{
         position: "fixed", inset: 0, zIndex: 9999,
         background: "var(--overlay)",
-        display: "flex", alignItems: "flex-end", justifyContent: "center",
-        WebkitTransform: "translateZ(0)", transform: "translateZ(0)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "16px",
       }}>
         <div style={{
           width: "100%", maxWidth: 430,
           background: "var(--picker-bg)",
-          borderTop: "1px solid var(--gl-bd)",
-          borderRadius: "22px 22px 0 0",
-          maxHeight: "88vh",
+          border: "1px solid var(--gl-bd)",
+          borderRadius: 24,
+          maxHeight: "calc(100dvh - 32px)",
           display: "flex", flexDirection: "column",
-          boxShadow: "0 -20px 60px rgba(0,0,0,.7)",
-          animation: "picker-up .28s cubic-bezier(.34,1.56,.64,1)",
+          overflow: "hidden",
+          boxShadow: "0 24px 64px rgba(0,0,0,.7)",
+          animation: "picker-in .22s cubic-bezier(.34,1.4,.64,1)",
         }}>
+          {/* Header */}
           <div style={{
             padding: "16px 18px 13px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             borderBottom: "1px solid var(--gl-bd)",
             flexShrink: 0,
           }}>
-            <p style={{ fontFamily: "var(--fb)", fontSize: 16, fontWeight: 800, color: "var(--tx)" }}>
-              Chọn lá bài
-            </p>
+            <div>
+              <p style={{ fontFamily: "var(--fb)", fontSize: 16, fontWeight: 800, color: "var(--tx)", margin: 0 }}>
+                Chọn lá bài
+              </p>
+              <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", margin: "2px 0 0" }}>
+                {used.size > 0 ? `${used.size} lá đã dùng` : "Deck đầy đủ"}
+              </p>
+            </div>
             <button
               type="button"
               onClick={onClose}
@@ -292,66 +373,66 @@ function CardPicker({ used, onPick, onClose }: Readonly<{
                 color: "var(--tx2)", fontSize: 15, cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
-            >
-              ✕
-            </button>
+            >✕</button>
           </div>
 
-          <div style={{
-            display: "flex", gap: 8, padding: "10px 14px 4px",
-            flexShrink: 0,
-          }}>
+          {/* 4 suit sections, each with a 7-column grid → 2 rows of 7+6 cards, no horizontal scroll */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "8px 10px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
             {SUITS.map((suit) => {
               const red = suit === "♥" || suit === "♦"
+              const usedInSuit = RANKS.filter((r) => used.has(`${suit} ${r}`)).length
               return (
-                <div key={suit} style={{
-                  flex: 1, textAlign: "center",
-                  fontSize: 20, color: red ? "#ef4444" : "var(--tx)",
-                  fontWeight: 700,
-                }}>
-                  {suit}
+                <div key={suit}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18, lineHeight: 1, color: red ? "#d92020" : "var(--tx2)" }}>{suit}</span>
+                    {usedInSuit > 0 && (
+                      <span style={{ fontSize: 10, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
+                        {usedInSuit}/13
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 5 }}>
+                    {RANKS.map((rank) => {
+                      const card = `${suit} ${rank}`
+                      const isUsed = used.has(card)
+                      return (
+                        <button
+                          key={card}
+                          type="button"
+                          disabled={isUsed}
+                          onClick={() => { onPick(card); onClose() }}
+                          style={{
+                            aspectRatio: "63/88",
+                            borderRadius: 10,
+                            border: isUsed
+                              ? "1px solid rgba(255,255,255,.06)"
+                              : `1px solid ${red ? "rgba(217,32,32,.15)" : "rgba(0,0,0,.1)"}`,
+                            background: isUsed ? "rgba(255,255,255,.04)" : "#fafafa",
+                            cursor: isUsed ? "not-allowed" : "pointer",
+                            display: "flex", flexDirection: "column",
+                            alignItems: "flex-start", justifyContent: "space-between",
+                            padding: "5px 6px",
+                            boxShadow: isUsed ? "none" : "0 2px 6px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.9)",
+                            opacity: isUsed ? 0.28 : 1,
+                            transition: "opacity var(--dur-f)",
+                            fontFamily: "var(--fm)",
+                          }}
+                        >
+                          <span style={{
+                            fontSize: 16, fontWeight: 800, lineHeight: 1,
+                            color: red ? "#d92020" : "#1a1a1a",
+                          }}>{rank}</span>
+                          <span style={{
+                            fontSize: 18, lineHeight: 1,
+                            color: red ? "#d92020" : "#1a1a1a",
+                          }}>{suit}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}
-          </div>
-
-          <div style={{
-            overflowY: "auto", padding: "6px 14px 100px",
-            display: "flex", flexDirection: "column", gap: 7,
-          }}>
-            {RANKS.map((rank) => (
-              <div key={rank} style={{ display: "flex", gap: 8 }}>
-                {SUITS.map((suit) => {
-                  const card = `${suit} ${rank}`
-                  const isUsed = used.has(card)
-                  const red = suit === "♥" || suit === "♦"
-                  let cardColor = "var(--tx)"
-                  if (isUsed) cardColor = "var(--tx3)"
-                  else if (red) cardColor = "#ef4444"
-                  return (
-                    <button
-                      key={card}
-                      type="button"
-                      disabled={isUsed}
-                      onClick={() => { onPick(card); onClose() }}
-                      style={{
-                        flex: 1, height: 54, borderRadius: 12, border: "none",
-                        background: isUsed ? "var(--card-empty)" : "var(--gl2)",
-                        color: cardColor,
-                        fontFamily: "var(--fm)", fontSize: 15, fontWeight: 800,
-                        cursor: isUsed ? "not-allowed" : "pointer",
-                        transition: "background var(--dur-f)",
-                        textDecoration: isUsed ? "line-through" : "none",
-                        boxShadow: isUsed ? "none" : "inset 0 1px 0 0 var(--gl-hl)",
-                        opacity: isUsed ? 0.4 : 1,
-                      }}
-                    >
-                      {suit} {rank}
-                    </button>
-                  )
-                })}
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -394,6 +475,10 @@ export default function AIPage() {
   const [calculating, setCalculating] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
 
+  // Card back settings
+  const [cardBack, setCardBack] = useState<CardBackId>("chelsea")
+  const [cardSettingsOpen, setCardSettingsOpen] = useState(false)
+
   // Scan
   const scanInputRef = useRef<HTMLInputElement>(null)
   const [scanning, setScanning] = useState(false)
@@ -409,13 +494,32 @@ export default function AIPage() {
   useEffect(() => {
     const hand = supportHand.filter(Boolean) as string[]
     const board = supportBoard.filter(Boolean) as string[]
-    const id1 = setTimeout(() => setCalculating(hand.length >= 2), 0)
+    const bc = board.length
+    const shouldCalc = hand.length === 2 && (bc === 0 || bc === 3 || bc === 4 || bc === 5)
+    const id1 = setTimeout(() => setCalculating(shouldCalc), 220)
     const id2 = setTimeout(() => {
-      setCalcResult(hand.length < 2 ? null : runMonteCarlo(hand, board, numPlayers))
+      setCalcResult(shouldCalc ? runMonteCarlo(hand, board, numPlayers) : null)
       setCalculating(false)
-    }, 30)
+    }, 260)
     return () => { clearTimeout(id1); clearTimeout(id2) }
   }, [supportHand, supportBoard, numPlayers])
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const saved = localStorage.getItem(CARD_BACK_KEY) as CardBackId | null
+      if (saved && CARD_BACKS.some(b => b.id === saved)) setCardBack(saved)
+    }, 0)
+    return () => clearTimeout(id)
+  }, [])
+
+  useEffect(() => {
+    const opt = CARD_BACKS.find(b => b.id === cardBack)
+    if (opt) {
+      document.documentElement.style.setProperty("--card-back", opt.color)
+      document.documentElement.style.setProperty("--card-back-image", `url('${opt.image}')`)
+    }
+    localStorage.setItem(CARD_BACK_KEY, cardBack)
+  }, [cardBack])
 
   const resetArbiter = () => {
     setBoard([null, null, null, null, null])
@@ -566,6 +670,11 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
 
   const used = allUsedCards(board, players, supportHand, supportBoard)
   const hasResult = streaming || Boolean(result)
+  const suppHandCards = supportHand.filter(Boolean) as string[]
+  const suppBoardCards = supportBoard.filter(Boolean) as string[]
+  const suppBoardCount = suppBoardCards.length
+  const suppHandReady = suppHandCards.length === 2
+  const suppBoardWaiting = suppHandReady && (suppBoardCount === 1 || suppBoardCount === 2)
 
   return (
     <div>
@@ -602,13 +711,27 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
       `}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fb)", color: "var(--tx)", marginBottom: 4 }}>
-          AI Cộng Sự
-        </h1>
-        <p style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
-          Tính xác suất · Phán xử tranh chấp
-        </p>
+      <div style={{ marginBottom: 18, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, fontFamily: "var(--fb)", color: "var(--tx)", marginBottom: 4 }}>
+            AI Cộng Sự
+          </h1>
+          <p style={{ fontSize: 12, color: "var(--tx3)", fontFamily: "var(--fm)" }}>
+            Tính xác suất · Phán xử tranh chấp
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCardSettingsOpen(true)}
+          style={{
+            width: 36, height: 36, borderRadius: 12, flexShrink: 0, marginTop: 2,
+            border: "1px solid var(--gl-bd)", background: "var(--gl)",
+            color: "var(--tx2)", fontSize: 17, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background var(--dur-f)",
+          }}
+          title="Chọn bộ bài"
+        >🃏</button>
       </div>
 
       {/* Tab bar */}
@@ -668,12 +791,13 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
               </button>
             </div>
            
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <div style={{ display: "flex", gap: 10, marginTop: 14, justifyContent: "center" }}>
               {([0, 1] as const).map((slot) => (
                 <CardSlot
                   key={slot}
+                  width={84}
+                  size="large"
                   card={supportHand[slot]}
-                  label={`Lá ${slot + 1}`}
                   onClick={() => setPickerTarget({ kind: "support-hand", slot })}
                   onClear={() => setSupportHand(prev => { const next = [...prev] as [string|null, string|null]; next[slot] = null; return next })}
                 />
@@ -697,7 +821,6 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                 <CardSlot
                   key={BOARD_LABELS[i]}
                   card={card}
-                  label={BOARD_LABELS[i]}
                   onClick={() => setPickerTarget({ kind: "support-board", idx: i })}
                   onClear={() => setSupportBoard(prev => { const next = [...prev]; next[i] = null; return next })}
                 />
@@ -777,7 +900,11 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                 <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 4, fontFamily: "var(--fb)" }}>
                   Tỉ lệ thắng
                 </p>
-                {calculating ? (
+                {suppBoardWaiting ? (
+                  <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--fm)", color: "var(--tx3)", lineHeight: 1.3, paddingTop: 2 }}>
+                    Đợi đủ Flop ({3 - suppBoardCount} lá)
+                  </p>
+                ) : calculating ? (
                   <div style={{ display: "flex", gap: 5, paddingTop: 2 }}>
                     {[0,1,2].map((i) => (
                       <div key={i} style={{
@@ -809,7 +936,9 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
               <p style={{ fontSize: 11, fontWeight: 700, color: "var(--tx3)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 10, fontFamily: "var(--fb)" }}>
                 Bộ bài
               </p>
-              {calculating ? (
+              {suppBoardWaiting ? (
+                <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--fm)", color: "var(--tx3)" }}>—</p>
+              ) : calculating ? (
                 <div style={{ display: "flex", gap: 5, paddingBottom: 2 }}>
                   {[0,1,2].map((i) => (
                     <div key={i} style={{
@@ -874,9 +1003,11 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
               })()}
             </div>
 
-            {!calcResult && (
+            {(suppBoardWaiting || !suppHandReady) && !calculating && (
               <p style={{ fontSize: 11, color: "var(--tx3)", fontFamily: "var(--fm)", marginTop: 10, textAlign: "center", opacity: 0.7 }}>
-                Nhập đủ 2 lá trên tay để bắt đầu tính toán
+                {suppBoardWaiting
+                  ? `Cần thêm ${3 - suppBoardCount} lá Flop để tính toán`
+                  : "Nhập đủ 2 lá trên tay để bắt đầu tính toán"}
               </p>
             )}
           </div>
@@ -1050,7 +1181,6 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                 <CardSlot
                   key={BOARD_LABELS[i]}
                   card={card}
-                  label={BOARD_LABELS[i]}
                   disabled={hasResult}
                   onClick={() => { if (!hasResult) setPickerTarget({ kind: "board", idx: i }) }}
                 />
@@ -1093,16 +1223,18 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                   </button>
                 )}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                 <CardSlot
+                  width={84}
                   card={player.cards[0]}
-                  label="Lá 1"
+                  size="large"
                   disabled={hasResult}
                   onClick={() => { if (!hasResult) setPickerTarget({ kind: "player", idx: pi, slot: 0 }) }}
                 />
                 <CardSlot
+                  width={84}
                   card={player.cards[1]}
-                  label="Lá 2"
+                  size="large"
                   disabled={hasResult}
                   onClick={() => { if (!hasResult) setPickerTarget({ kind: "player", idx: pi, slot: 1 }) }}
                 />
@@ -1274,13 +1406,22 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
         </div>
       )}
 
-      {/* Card picker */}
-      {pickerTarget && (
+      {/* Card picker — portal to body so it sits above TopBar (z-10) and BottomNav (z-50) */}
+      {pickerTarget && createPortal(
         <CardPicker
           used={used}
           onPick={pickCard}
           onClose={() => setPickerTarget(null)}
-        />
+        />,
+        document.body,
+      )}
+      {cardSettingsOpen && createPortal(
+        <CardSettingsModal
+          current={cardBack}
+          onChange={setCardBack}
+          onClose={() => setCardSettingsOpen(false)}
+        />,
+        document.body,
       )}
     </div>
   )
