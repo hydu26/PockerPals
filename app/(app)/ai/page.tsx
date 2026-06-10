@@ -477,6 +477,7 @@ export default function AIPage() {
 
   // Card back settings
   const [cardBack, setCardBack] = useState<CardBackId>("chelsea")
+  const [cardBackLoaded, setCardBackLoaded] = useState(false)
   const [cardSettingsOpen, setCardSettingsOpen] = useState(false)
 
   // Scan
@@ -505,21 +506,18 @@ export default function AIPage() {
   }, [supportHand, supportBoard, numPlayers])
 
   useEffect(() => {
-    const id = setTimeout(() => {
-      const saved = localStorage.getItem(CARD_BACK_KEY) as CardBackId | null
-      if (saved && CARD_BACKS.some(b => b.id === saved)) setCardBack(saved)
-    }, 0)
-    return () => clearTimeout(id)
+    const saved = localStorage.getItem(CARD_BACK_KEY) as CardBackId | null
+    if (saved && CARD_BACKS.some(b => b.id === saved)) setCardBack(saved as CardBackId)
+    setCardBackLoaded(true)
   }, [])
 
   useEffect(() => {
     const opt = CARD_BACKS.find(b => b.id === cardBack)
-    if (opt) {
-      document.documentElement.style.setProperty("--card-back", opt.color)
-      document.documentElement.style.setProperty("--card-back-image", `url('${opt.image}')`)
-    }
-    localStorage.setItem(CARD_BACK_KEY, cardBack)
-  }, [cardBack])
+    if (!opt) return
+    document.documentElement.style.setProperty("--card-back", opt.color)
+    document.documentElement.style.setProperty("--card-back-image", `url('${opt.image}')`)
+    if (cardBackLoaded) localStorage.setItem(CARD_BACK_KEY, cardBack)
+  }, [cardBack, cardBackLoaded])
 
   const resetArbiter = () => {
     setBoard([null, null, null, null, null])
