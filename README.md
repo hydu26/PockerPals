@@ -1,4 +1,4 @@
-# 🃏 PokerPals
+# PokerPals
 
 Ứng dụng theo dõi điểm poker cho nhóm bạn — nhanh, gọn, đẹp.
 
@@ -8,28 +8,45 @@
 
 ## Tính năng
 
-| Tính năng | Mô tả |
-|---|---|
-| **Nhóm & quyền truy cập** | Tạo nhiều nhóm, đặt mật khẩu riêng cho từng nhóm |
-| **Nhập điểm phiên** | Nhập điểm từng người, kiểm tra tổng cân bằng trước khi lưu |
-| **Lịch sử phiên** | Xem lại toàn bộ các phiên đã chơi |
-| **Bảng xếp hạng** | Xếp hạng thành viên theo tổng điểm tích lũy |
-| **AI Phân xử** | Claude AI giải quyết tranh chấp Texas Hold'em theo thời gian thực |
-| **Luật chơi** | Tham khảo nhanh thứ bậc bài, hành động đặt cược, diễn biến ván |
-| **PWA** | Cài đặt như app native trên iOS/Android |
-| **Phân quyền** | Super admin · Admin nhóm · Thành viên chỉ xem |
+### Quản lý nhóm
+- Tạo nhiều nhóm chơi, đặt mật khẩu riêng cho từng nhóm
+- Nhập điểm từng người trong phiên, kiểm tra tổng cân bằng trước khi lưu
+- Xem lại lịch sử toàn bộ phiên đã chơi
+- Bảng xếp hạng thành viên theo tổng điểm tích lũy
+- Phân quyền 3 cấp: Super admin · Admin nhóm · Thành viên chỉ xem
+
+### AI & Công cụ hỗ trợ (`/ai`)
+- **AI Phân xử** — Nhập bài tay + board, Claude AI giải thích người thắng theo luật Texas Hold'em (yêu cầu đăng nhập)
+- **Hỗ trợ tính toán** — Monte Carlo 8.000 ván giả lập, hiển thị:
+  - Tỉ lệ thắng & hòa theo số người chơi (2–10)
+  - Outs và bộ bài mục tiêu (từ Flop trở đi)
+  - Tính toán theo các giai đoạn hợp lệ: Pre-flop · Flop · Turn · River
+- **Tùy chỉnh bộ bài** — 6 theme mặt sau lá bài theo CLB bóng đá, lưu vào localStorage
+
+### Luật chơi (`/rules`)
+- Thứ bậc 10 bộ bài từ High Card đến Royal Flush, kèm ví dụ
+- Diễn biến ván: Pre-flop → Flop → Turn → River → Showdown
+- Các hành động đặt cược: Check · Bet · Call · Raise · Fold · All-in
+- FAQ các tình huống đặc biệt
+
+### Khác
+- PWA — cài đặt như app native trên iOS/Android
+- Dark/Light mode
+- Giao diện tiếng Việt
 
 ---
 
 ## Stack
 
-- **Framework** — [Next.js 16](https://nextjs.org) (App Router)
-- **UI** — React 19 · Tailwind CSS v4
-- **Backend / Auth / DB** — [Supabase](https://supabase.com)
-- **Data fetching** — [TanStack Query v5](https://tanstack.com/query)
-- **AI** — [Anthropic Claude](https://anthropic.com) qua `@anthropic-ai/sdk`
-- **State** — [Zustand](https://zustand-demo.pmnd.rs)
-- **Notifications** — [Sonner](https://sonner.emilkowal.ski)
+| Lớp | Công nghệ |
+|---|---|
+| Framework | [Next.js 16](https://nextjs.org) (App Router) |
+| UI | React 19 · Tailwind CSS v4 · next-themes |
+| Backend / Auth / DB | [Supabase](https://supabase.com) |
+| Data fetching | [TanStack Query v5](https://tanstack.com/query) |
+| State | [Zustand](https://zustand-demo.pmnd.rs) |
+| AI | [Anthropic Claude](https://anthropic.com) via `@anthropic-ai/sdk` |
+| Notifications | [Sonner](https://sonner.emilkowal.ski) |
 
 ---
 
@@ -49,21 +66,20 @@ pnpm install
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://<project-id>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>   # server-side only
 
 # Anthropic (cho tính năng AI Phân xử)
 ANTHROPIC_API_KEY=sk-ant-...
 
-# URL của app (dùng cho SEO / Open Graph)
+# URL của app (SEO / email redirect / Open Graph)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ### 3. Chạy dev server
 
 ```bash
-pnpm dev
+pnpm dev     # http://localhost:3000
 ```
-
-Mở [http://localhost:3000](http://localhost:3000).
 
 ---
 
@@ -71,43 +87,50 @@ Mở [http://localhost:3000](http://localhost:3000).
 
 ```
 app/
-├── (app)/                  # Layout chính (TopBar + BottomNav)
-│   ├── page.tsx            # Trang chủ — danh sách nhóm
+├── (app)/                   # Layout chính (TopBar + BottomNav)
+│   ├── page.tsx             # Trang chủ — danh sách nhóm
 │   ├── groups/
-│   │   ├── new/            # Tạo nhóm mới
+│   │   ├── new/             # Tạo nhóm mới (super admin)
 │   │   └── [id]/
-│   │       ├── page.tsx    # Nhập điểm phiên
-│   │       ├── history/    # Lịch sử phiên
-│   │       ├── rank/       # Bảng xếp hạng
-│   │       ├── members/    # Quản lý thành viên
-│   │       └── settings/   # Cài đặt nhóm
-│   ├── ai/                 # AI Phân xử + FAQ
-│   └── rules/              # Luật chơi
-├── (auth)/login/           # Đăng nhập
-├── icon.tsx                # Favicon (joker card, render động)
-├── apple-icon.tsx          # Apple touch icon
-├── opengraph-image.tsx     # Ảnh preview OG (1200×630)
-└── layout.tsx              # Root layout + SEO metadata
+│   │       ├── page.tsx     # Nhập điểm phiên
+│   │       ├── history/     # Lịch sử phiên
+│   │       ├── rank/        # Bảng xếp hạng
+│   │       ├── members/     # Quản lý thành viên
+│   │       └── settings/    # Cài đặt nhóm
+│   ├── ai/                  # AI Phân xử + Hỗ trợ tính toán
+│   └── rules/               # Luật chơi & FAQ
+├── auth/
+│   ├── login/               # Đăng nhập
+│   ├── callback/            # OAuth callback
+│   └── update-password/     # Đặt lại mật khẩu
+├── admin/                   # Bảng quản trị (super admin)
+├── api/
+│   ├── claude/              # AI Phân xử endpoint (streaming)
+│   ├── scan-cards/          # Nhận diện lá bài từ ảnh
+│   ├── verify-password/     # Xác thực mật khẩu nhóm
+│   └── admin/               # Quản lý user & invite
+└── layout.tsx               # Root layout + SEO metadata
 
 components/
-├── shared/                 # TopBar, BottomNav, Providers, modals
-├── groups/                 # GroupCard, group wizards
-└── score/                  # ScoreRow
+├── shared/                  # TopBar, BottomNav, CardSlot, Providers
+├── groups/                  # GroupCard, group wizards
+└── score/                   # ScoreRow
 
 lib/
-├── hooks/                  # useGroups, usePermissions, useGroupAccess …
-├── supabase/               # Client + server Supabase helpers
-├── types/                  # TypeScript types
-└── utils/                  # format-score, …
+├── hooks/                   # useGroups, usePermissions, useGroupAccess …
+├── supabase/                # Client + server helpers
+├── types/                   # TypeScript types
+└── utils/                   # format-score, …
 
 supabase/
-├── migrations/             # SQL migrations
-└── functions/              # Edge Functions
+├── migrations/              # SQL migrations
+└── functions/               # Edge Functions
 
 public/
-├── icon.svg                # Icon tĩnh (PWA manifest)
-├── manifest.json           # Web app manifest
-└── sw.js                   # Service Worker
+├── card-backs/              # Logo CLB bóng đá (theme mặt sau lá bài)
+├── logo/                    # Logo dark/light
+├── manifest.json            # Web app manifest
+└── sw.js                    # Service Worker (PWA)
 ```
 
 ---
@@ -116,23 +139,24 @@ public/
 
 | Role | Quyền |
 |---|---|
-| **Super admin** | Tạo nhóm mới, xem tất cả nhóm |
-| **Group admin** | Lưu điểm, chỉnh sửa cài đặt nhóm, quản lý thành viên |
+| **Super admin** | Tạo nhóm mới, truy cập /admin, xem tất cả nhóm |
+| **Group admin** | Lưu điểm, chỉnh cài đặt nhóm, quản lý thành viên |
 | **Member** | Xem điểm, lịch sử, xếp hạng (chỉ đọc) |
 
-Super admin được cấu hình qua biến môi trường hoặc Supabase. Nhóm có mật khẩu yêu cầu người dùng nhập đúng mật khẩu trước khi truy cập.
+Nhóm có mật khẩu yêu cầu nhập đúng mật khẩu trước khi truy cập. Super admin được cấu hình qua Supabase.
 
 ---
 
 ## Deploy lên Vercel
 
-```bash
-# Push lên GitHub rồi import vào Vercel
-# Thêm các biến môi trường trong Settings > Environment Variables:
+Push lên GitHub rồi import vào Vercel. Thêm các biến môi trường trong **Settings → Environment Variables**:
+
+```
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
 ANTHROPIC_API_KEY
-NEXT_PUBLIC_APP_URL   # ví dụ: https://pokerpals.vercel.app
+NEXT_PUBLIC_APP_URL        # ví dụ: https://pokerpals.vercel.app
 ```
 
 Vercel tự động build và deploy khi push lên `main`.

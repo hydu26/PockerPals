@@ -1019,24 +1019,24 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                 background: "var(--overlay)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 padding: "24px 16px",
-                overflowY: "auto",
               }}
               onClick={() => setShowInfo(false)}
             >
               <div
                 style={{
                   width: "100%", maxWidth: 400,
+                  maxHeight: "calc(100dvh - 48px)",
                   background: "var(--picker-bg)",
                   border: "1px solid var(--gl-bd)",
                   borderRadius: 22,
-                  padding: "22px 20px 24px",
                   boxShadow: "0 24px 60px rgba(0,0,0,.6)",
                   animation: "result-appear .22s ease both",
-                  flexShrink: 0,
+                  display: "flex", flexDirection: "column",
+                  overflow: "hidden",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <div style={{ padding: "22px 20px 16px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--gl-bd)" }}>
                   <p style={{ fontFamily: "var(--fb)", fontSize: 16, fontWeight: 800, color: "var(--tx)" }}>
                     ℹ️ Phương pháp tính toán
                   </p>
@@ -1052,23 +1052,27 @@ Người thắng: [tên]. (Hoặc: Hòa — chia đôi pot.)`
                   >✕</button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
                   {[
                     {
-                      title: "Monte Carlo Simulation",
-                      body: "Mỗi lượt giả lập là một ván đầy đủ theo số người chơi bạn chọn. Ví dụ 7 người: bạn đấu với 6 đối thủ — mỗi người được phát 2 lá ngẫu nhiên từ bộ bài còn lại, board còn thiếu cũng được rút ngẫu nhiên. Bạn thắng khi bộ bài của bạn là tốt nhất trong tất cả. Sau 8.000 lượt, tỉ lệ thắng = số lượt bạn thắng / 8.000.",
+                      title: "Cách tính hoạt động",
+                      body: "Ứng dụng chạy 8.000 ván giả lập (Monte Carlo). Mỗi ván: đối thủ được phát bài ngẫu nhiên, các lá board còn thiếu cũng rút ngẫu nhiên, rồi so sánh bộ bài. Ví dụ: bạn giữ ♥A ♠A, board trống, 6 người — sau 8.000 ván app tính bạn thắng bao nhiêu lần rồi chia đôi ra tỉ lệ %.",
+                    },
+                    {
+                      title: "Tỉ lệ thắng & Hòa",
+                      body: "Tỉ lệ thắng = % ván bạn có bộ bài cao hơn tất cả đối thủ. Hòa = % ván bạn bằng điểm với ít nhất 1 người (split pot). Ví dụ: 62.5% thắng + 3.1% hòa → 65.6% lần bạn không thua tiền.",
+                    },
+                    {
+                      title: "Outs & Bộ bài mục tiêu",
+                      body: "Outs là số lá còn lại trong bộ bài có thể cải thiện tay bài của bạn. Ví dụ: bạn có 4 lá cùng chất → còn 9 lá đồng chất trong bộ (52 − 4 lá biết = 48 lá, 9 outs). Tỉ lệ = 9 / 48 ≈ 18.8%. Hiển thị từ Flop trở đi.",
                     },
                     {
                       title: "Độ chính xác",
-                      body: "±1–2% (khoảng tin cậy 95%). Sai số giảm dần khi board nhiều lá hơn vì số biến ẩn ít hơn.",
+                      body: "Sai số ±1–2% (khoảng tin cậy 95%). Board càng nhiều lá, kết quả càng chính xác vì ít biến ẩn hơn. Pre-flop (0 lá board) có sai số cao nhất vì cần giả lập toàn bộ 5 lá board + bài đối thủ.",
                     },
                     {
-                      title: "Tỉ lệ thắng",
-                      body: "% vòng bạn thắng đối thủ ngẫu nhiên duy nhất (heads-up). Không tính đến số người chơi thực tế tại bàn.",
-                    },
-                    {
-                      title: "Tỉ lệ liên kết (Outs)",
-                      body: "Số lá còn trong bộ bài mà nếu ra sẽ cải thiện bộ bài của bạn, tính theo % tổng bài còn lại. Chỉ hiển thị từ Flop đến Turn.",
+                      title: "Khi nào không tính?",
+                      body: "App chỉ tính khi board có 0, 3, 4 hoặc 5 lá (Pre-flop / Flop / Turn / River). Không tính khi board có 1–2 lá vì đây là trạng thái không tồn tại trong thực tế — Flop phải ra cùng lúc 3 lá.",
                     },
                   ].map((s) => (
                     <div key={s.title} style={{
